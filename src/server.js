@@ -149,7 +149,7 @@ app.get('/:username/post/:postId', async (req, res) => {
 
         const { requestUrl, description, media } = data
 
-        const imageUrl = media.filter(o => path.extname(o.filename).includes('jpg'))[0]?.originalUrl
+        const imageUrl = media.filter(o => ['.jpg', '.jpeg', '.png', '.webp'].includes(path.extname(o.filename).toLowerCase()))[0]?.originalUrl
         console.log(`imageUrl: ${imageUrl}\n`)
 
         const videoOriginalUrl = media.filter(o => path.extname(o.filename).includes('mp4'))[0]?.originalUrl
