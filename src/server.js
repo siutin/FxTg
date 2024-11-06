@@ -5,7 +5,27 @@ import { parse } from './parser.js'
 
 const app = express()
 const port = process.env.PORT || 3000
-const base_url = process.env.BASE_URL || `http://localhost:${port}`
+const baseUrl = process.env.BASE_URL || `http://localhost:${port}`
+
+function encodeVideoURL2Params(value) {
+    const url = new URL(value)
+    let params = new URLSearchParams(url.search)
+    params.append("___host", url.host)
+    params.append("___pathname", url.pathname)
+    return params
+}
+
+function decodeVideoURL(value) {
+    const url = new URL(value)
+    const host = url.searchParams.get('___host')
+    const pathname = url.searchParams.get('___pathname')
+    let params = new URLSearchParams(url.searchParams)
+    params.delete('___host')
+    params.delete('___pathname')
+    params.delete('___t')
+    params.delete('0.mp4')
+    return `https://${host}${pathname}?${params.toString()}`
+}
 
 app.use(express.static('public'))
 
@@ -14,9 +34,9 @@ app.get('/', (req, res) => {
 })
 
 app.get('/media_download', async (req, res) => {
-    const url = req.query.url
-    console.log(`url: ${url}`)
-    const fileUrl = Buffer.from(url, 'base64').toString()
+    const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl
+    console.log(`fullUrl: ${fullUrl}`)
+    const fileUrl = decodeVideoURL(fullUrl)
     console.log(`fileUrl: ${fileUrl}`)
 
     const customUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/450.0.0.38.108;FBBV/564431005;FBDV/iPhone17,1;FBMD/iPhone;FBSN/iOS;FBSV/18.1;FBSS/3;FBID/phone;FBLC/en_GB;FBOP/5;FBRV/567052743]'
@@ -128,8 +148,9 @@ app.get('/:username/post/:postId', async (req, res) => {
         const videoOriginalUrl = media.filter(o => path.extname(o.filename).includes('mp4'))[0].originalUrl
         console.log(`videoOriginalUrl: ${videoOriginalUrl}\n`)
 
-        const videoEncodedPath = Buffer.from(videoOriginalUrl).toString('base64')
-        const videoEncodedUrl = `${base_url}/media_download?t=${generateRandomIdentifier()}&url=${videoEncodedPath}&n=0.mp4`
+        let newParams = encodeVideoURL2Params(videoOriginalUrl)
+        newParams.append("___t", generateRandomIdentifier())
+        const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
         console.log(`videoEncodedUrl: ${videoEncodedUrl}\n`)
 
         const external = {
