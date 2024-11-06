@@ -145,43 +145,73 @@ app.get('/:username/post/:postId', async (req, res) => {
         const imageUrl = media.filter(o => path.extname(o.filename).includes('jpg'))[0]?.originalUrl
         console.log(`imageUrl: ${imageUrl}\n`)
 
-        const videoOriginalUrl = media.filter(o => path.extname(o.filename).includes('mp4'))[0].originalUrl
+        const videoOriginalUrl = media.filter(o => path.extname(o.filename).includes('mp4'))[0]?.originalUrl
         console.log(`videoOriginalUrl: ${videoOriginalUrl}\n`)
 
-        let newParams = encodeVideoURL2Params(videoOriginalUrl)
-        newParams.append("___t", generateRandomIdentifier())
-        const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
-        console.log(`videoEncodedUrl: ${videoEncodedUrl}\n`)
+        if (videoOriginalUrl) {
+            let newParams = encodeVideoURL2Params(videoOriginalUrl)
+            newParams.append("___t", generateRandomIdentifier())
+            const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
+            console.log(`videoEncodedUrl: ${videoEncodedUrl}\n`)
 
-        const external = {
-            url: videoEncodedUrl,
-            thumbnailUrl: imageUrl,
-            format: 'mp4',
-            width: 320,
-            height: 320
+            const external = {
+                url: videoEncodedUrl,
+                thumbnailUrl: imageUrl,
+                format: 'mp4',
+                width: 320,
+                height: 320
+            }
+            res.send(
+                `<html>
+                    <head>
+                        <meta property="og:title" content="Thread from ${username}"/>
+                        <meta name="twitter:description" content="${description}">
+                        <meta property="og:url" content="${threadsUrl}"/>
+                        <meta property="twitter:player" content="${external.url}">
+                        <meta property="twitter:player:stream" content="${external.url}"/>
+                        <meta property="twitter:player:stream:content_type" content="${external.format}"/>
+                        <meta property="twitter:player:width" content="${external.width}">
+                        <meta property="twitter:player:height" content="${external.height}">
+                        <meta property="og:type" content="video.other">
+                        <meta property="og:video:url" content="${external.url}">
+                        <meta property="og:video:secure_url" content="${external.url}">
+                        <meta property="og:video:width" content="${external.width}">
+                        <meta property="og:video:height" content="${external.height}">
+                        <meta property="og:image" content="${external.thumbnailUrl}">
+                    </head>
+                </html>
+                `
+            )
+            return
         }
 
-        const newHtml = `
-    <html>
-    <head>
-        <meta property="og:title" content="Thread from ${username}"/>
-        <meta name="twitter:description" content="${description}">
-        <meta property="og:url" content="${threadsUrl}"/>
-        <meta property="twitter:player" content="${external.url}">
-        <meta property="twitter:player:stream" content="${external.url}"/>
-        <meta property="twitter:player:stream:content_type" content="${external.format}"/>
-        <meta property="twitter:player:width" content="${external.width}">
-        <meta property="twitter:player:height" content="${external.height}">
-        <meta property="og:type" content="video.other">
-        <meta property="og:video:url" content="${external.url}">
-        <meta property="og:video:secure_url" content="${external.url}">
-        <meta property="og:video:width" content="${external.width}">
-        <meta property="og:video:height" content="${external.height}">
-        <meta property="og:image" content="${external.thumbnailUrl}">
-    </head>
-    </html>
-    `
-        res.send(newHtml)
+        if (imageUrl) {
+            res.send(
+                `<html>
+                    <head>
+                        <meta name="twitter:card" content="summary_large_image">
+                        <meta property="og:title" content="Thread from ${username}"/>
+                        <meta name="twitter:description" content="${description}">
+                        <meta property="twitter:image" content="${imageUrl}">
+                        <meta property="og:url" content="${threadsUrl}"/>
+                        <meta property="og:image" content="${imageUrl}">
+                    </head>
+                </html>
+                `
+            )
+            return
+        }
+
+        return res.send(
+            `<html>
+                <head>
+                    <meta property="og:title" content="Thread from ${username}"/>
+                    <meta name="twitter:description" content="${description}">
+                    <meta property="og:url" content="${threadsUrl}"/>
+                </head>
+            </html>
+            `
+        )
 
     } catch (error) {
         console.error('Error:', error)
