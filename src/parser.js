@@ -53,8 +53,10 @@ export class Parser {
             // Wait for network to be idle
             await page.waitForNetworkIdle({
                 timeout: 5000,
-                idleTime: 1000
+                idleTime: 100
             })
+
+            await page.waitForSelector('[data-interactive-id]')
 
             const files = new Set()
 
