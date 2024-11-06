@@ -1,11 +1,18 @@
 import express from 'express'
 import axios from 'axios'
 import path from 'path'
-import { parse } from './parser.js'
+import { Parser } from './parser.js'
 
 const app = express()
 const port = process.env.PORT || 3000
 const baseUrl = process.env.BASE_URL || `http://localhost:${port}`
+
+const parser = new Parser()
+parser.start()
+process.on('SIGINT', () => {
+    parser.close()
+    process.exit(0)
+})
 
 function encodeVideoURL2Params(value) {
     const url = new URL(value)
@@ -137,7 +144,7 @@ app.get('/:username/post/:postId', async (req, res) => {
             return res.status(301).redirect(threadsUrl)
         }
 
-        const data = await parse(threadsUrl)
+        const data = await parser.parse(threadsUrl)
         console.log('parsed data:', data)
 
         const { requestUrl, description, media } = data
