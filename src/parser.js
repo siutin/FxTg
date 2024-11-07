@@ -60,11 +60,12 @@ export class Parser {
 
             const files = new Set()
 
-            const description = await page.evaluate(() => {
+            const evaluatedResult = await page.evaluate(() => {
                 try {
-                    const div = document.querySelectorAll('[data-interactive-id]')[0]
-                    if (div) {
+
+                    function getDescriptionText(div) {
                         const h1 = div.querySelector('h1')
+                        if (!h1) return null
                         h1.childNodes.forEach(child => {
                             if (child.nodeType != 3) {
                                 h1.removeChild(child)
@@ -72,24 +73,36 @@ export class Parser {
                         })
                         return h1.innerText
                     }
-                } catch (ex) {
-                    return null
-                }
-            })
 
-            const postImageURL = await page.evaluate(() => {
-                try {
-                    const div = document.querySelectorAll('[data-interactive-id]')[0]
-                    if (div) {
+                    function getPostImageURL(div) {
                         const multi = div.querySelector("picture img")
                         if (multi) return multi.src
                         const single = div.querySelector("img[height='100%']")
-                        return single.src
+                        return single ? single.src : null
+                    }
+
+                    function getVideoImageURL(div) {
+                        const video = div.querySelector("video")
+                        return video ? video.src : null
+                    }
+
+                    const divs = document.querySelectorAll('[data-interactive-id]')
+                    if (divs.length > 0) {
+                        const div = divs[0]
+                        const description = getDescriptionText(div)
+                        const postImageURL = getPostImageURL(div)
+                        const videoImageURL = getVideoImageURL(div)
+                        return { description, postImageURL, videoImageURL }
                     }
                 } catch (ex) {
-                    return null
+                    console.error(ex)
+                    return { description: null, postImageURL: null, videoImageURL: null }
                 }
             })
+
+            if (!evaluatedResult) throw new Error('failed to evaluate page')
+
+            const { description, postImageURL, videoImageURL } = evaluatedResult
 
             if (postImageURL) {
                 files.add({
@@ -97,18 +110,6 @@ export class Parser {
                     originalUrl: postImageURL
                 })
             }
-
-            const videoImageURL = await page.evaluate(() => {
-                try {
-                    const div = document.querySelectorAll('[data-interactive-id]')[0]
-                    if (div) {
-                        return div.querySelector("video").src
-                    }
-                } catch (ex) {
-                    return null
-                }
-            })
-
             if (videoImageURL) {
                 files.add({
                     filename: generateFilename(videoImageURL),
