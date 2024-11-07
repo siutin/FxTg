@@ -74,11 +74,12 @@ export class Parser {
                         return h1.innerText
                     }
 
-                    function getPostImageURL(div) {
+                    function getPostImageObject(div) {
                         const multi = div.querySelector("picture img")
-                        if (multi) return multi.src
+                        if (multi) return { src: multi.src, alt: multi.alt }
                         const single = div.querySelector("img[height='100%']")
-                        return single ? single.src : null
+                        if (single) return { src: single.src, alt: single.alt }
+                        return null
                     }
 
                     function getVideoImageURL(div) {
@@ -89,31 +90,34 @@ export class Parser {
                     const divs = document.querySelectorAll('[data-interactive-id]')
                     if (divs.length > 0) {
                         const div = divs[0]
-                        const description = getDescriptionText(div)
-                        const postImageURL = getPostImageURL(div)
+                        const postImageObject = getPostImageObject(div)
                         const videoImageURL = getVideoImageURL(div)
-                        return { description, postImageURL, videoImageURL }
+                        const description = getDescriptionText(div)
+                        return { description, postImageObject, videoImageURL }
                     }
                 } catch (ex) {
                     console.error(ex)
-                    return { description: null, postImageURL: null, videoImageURL: null }
+                    return { description: null, postImageObject: null, videoImageURL: null }
                 }
             })
 
             if (!evaluatedResult) throw new Error('failed to evaluate page')
 
-            const { description, postImageURL, videoImageURL } = evaluatedResult
+            const { description, postImageObject, videoImageURL } = evaluatedResult
 
-            if (postImageURL) {
+            if (postImageObject) {
                 files.add({
-                    filename: generateFilename(postImageURL),
-                    originalUrl: postImageURL
+                    alt: postImageObject.alt,
+                    filename: generateFilename(postImageObject.src),
+                    originalUrl: postImageObject.src,
+                    type: 'image'
                 })
             }
             if (videoImageURL) {
                 files.add({
                     filename: generateFilename(videoImageURL),
-                    originalUrl: videoImageURL
+                    originalUrl: videoImageURL,
+                    type: 'video'
                 })
             }
 

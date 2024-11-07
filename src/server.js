@@ -149,11 +149,16 @@ app.get('/:username/post/:postId', async (req, res) => {
 
         const { requestUrl, description, media } = data
 
-        const imageUrl = media.filter(o => ['.jpg', '.jpeg', '.png', '.webp'].includes(path.extname(o.filename).toLowerCase()))[0]?.originalUrl
-        console.log(`imageUrl: ${imageUrl}\n`)
+        const imageObject = media.filter(o => o.type === 'image')[0]
+        console.log('imageObject:', imageObject)
 
-        const videoOriginalUrl = media.filter(o => path.extname(o.filename).includes('mp4'))[0]?.originalUrl
+        const imageUrl = imageObject?.originalUrl
+        const imageAlt = imageObject?.alt
+
+        const videoOriginalUrl = media.filter(o => o.type === 'video')[0]?.originalUrl
         console.log(`videoOriginalUrl: ${videoOriginalUrl}\n`)
+
+        const text = description?.trim()?.length > 0 ? description : imageAlt
 
         if (videoOriginalUrl) {
             let newParams = encodeVideoURL2Params(videoOriginalUrl)
@@ -172,7 +177,7 @@ app.get('/:username/post/:postId', async (req, res) => {
                 `<html>
                     <head>
                         <meta property="og:title" content="Thread from ${username}"/>
-                        <meta name="twitter:description" content="${description}">
+                        <meta name="twitter:description" content="${text}">
                         <meta property="og:url" content="${threadsUrl}"/>
                         <meta property="twitter:player" content="${external.url}">
                         <meta property="twitter:player:stream" content="${external.url}"/>
@@ -198,7 +203,7 @@ app.get('/:username/post/:postId', async (req, res) => {
                     <head>
                         <meta name="twitter:card" content="summary_large_image">
                         <meta property="og:title" content="Thread from ${username}"/>
-                        <meta name="twitter:description" content="${description}">
+                        <meta name="twitter:description" content="${text}">
                         <meta property="twitter:image" content="${imageUrl}">
                         <meta property="og:url" content="${threadsUrl}"/>
                         <meta property="og:image" content="${imageUrl}">
@@ -213,7 +218,7 @@ app.get('/:username/post/:postId', async (req, res) => {
             `<html>
                 <head>
                     <meta property="og:title" content="Thread from ${username}"/>
-                    <meta name="twitter:description" content="${description}">
+                    <meta name="twitter:description" content="${text}">
                     <meta property="og:url" content="${threadsUrl}"/>
                 </head>
             </html>
