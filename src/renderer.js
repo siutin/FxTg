@@ -18,15 +18,17 @@ function renderStatus(data) {
     return `<p>${data.likeCount} ❤️ ${data.replyCount} 💬 ${data.repostCount} 🔁 ${data.shareCount}</p>`
 }
 
-function getThumbnailUrl(data) {
-    return data.images.filter(o => o.type === 'thumbnail')[0]?.url
+function getThumbnailUrl(data, index) {
+    return data.images.filter(o => o.type === 'thumbnail').at(index)?.url
 }
 
 function renderInstantView(data) {
     function generateMediaTag(data) {
         const elements = []
         if (data.hasVideo) {
-            elements.push(`<video src="${data.video.url}" controls poster="${getThumbnailUrl(data)}"></video>`)
+            data.videos.forEach((video, index) => {
+                elements.push(`<video src="${video.url}" controls poster="${getThumbnailUrl(data, index)}"></video>`)
+            })
         }
         if (data.hasImage) {
             data.images
@@ -83,17 +85,17 @@ function renderImage(data) {
 function renderVideo(data) {
     return {
         metaArray: [
-            `<meta property="twitter:player" content="${data.video.url}">`,
-            `<meta property="twitter:player:stream" content="${data.video.url}"/>`,
-            `<meta property="twitter:player:stream:content_type" content="${data.video.format}"/>`,
-            `<meta property="twitter:player:width" content="${data.video.width}">`,
-            `<meta property="twitter:player:height" content="${data.video.height}">`,
+            `<meta property="twitter:player" content="${data.videos[0].url}">`,
+            `<meta property="twitter:player:stream" content="${data.videos[0].url}"/>`,
+            `<meta property="twitter:player:stream:content_type" content="${data.videos[0].format}"/>`,
+            `<meta property="twitter:player:width" content="${data.videos[0].width}">`,
+            `<meta property="twitter:player:height" content="${data.videos[0].height}">`,
             `<meta property="og:type" content="video.other">`,
-            `<meta property="og:video:url" content="${data.video.url}">`,
-            `<meta property="og:video:secure_url" content="${data.video.url}">`,
-            `<meta property="og:video:width" content="${data.video.width}">`,
-            `<meta property="og:video:height" content="${data.video.height}">`,
-            `<meta property="og:image" content="${getThumbnailUrl(data)}">`
+            `<meta property="og:video:url" content="${data.videos[0].url}">`,
+            `<meta property="og:video:secure_url" content="${data.videos[0].url}">`,
+            `<meta property="og:video:width" content="${data.videos[0].width}">`,
+            `<meta property="og:video:height" content="${data.videos[0].height}">`,
+            `<meta property="og:image" content="${getThumbnailUrl(data, 0)}">`
         ]
     }
 }

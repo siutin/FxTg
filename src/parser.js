@@ -58,7 +58,7 @@ export class Parser {
 
             await page.waitForSelector('[data-interactive-id]')
 
-            const files = new Set()
+            const media = []
 
             const evaluatedResult = await page.evaluate(() => {
                 try {
@@ -86,9 +86,12 @@ export class Parser {
                         })
                     }
 
-                    function getVideoImageURL(div) {
-                        const video = div.querySelector("video")
-                        return video ? video.src : null
+                    function getVideos(div) {
+                        const videos = div.querySelectorAll("video")
+                        return Array.from(videos).map(video => ({
+                            src: video.src,
+                            type: 'video'
+                        }))
                     }
 
                     function getCreatedAt(div) {
@@ -133,7 +136,7 @@ export class Parser {
                     if (divs.length > 0) {
                         const div = divs[0]
                         const images = getImages(div)
-                        const videoImageURL = getVideoImageURL(div)
+                        const videos = getVideos(div)
                         const description = getDescriptionText(div)
 
                         const authorName = getAuthorName(document)
@@ -144,7 +147,7 @@ export class Parser {
                         return {
                             description,
                             images,
-                            videoImageURL,
+                            videos,
                             authorName,
                             profileImageURL,
                             createdAt,
@@ -156,7 +159,7 @@ export class Parser {
                     return {
                         description: null,
                         images: null,
-                        videoImageURL: null,
+                        videos: null,
                         authorName: null,
                         profileImageURL: null,
                         createdAt: null,
@@ -167,23 +170,24 @@ export class Parser {
 
             if (!evaluatedResult) throw new Error('failed to evaluate page')
 
-            const { description, images, videoImageURL, authorName, profileImageURL, createdAt, status } = evaluatedResult
+            const { description, images, videos, authorName, profileImageURL, createdAt, status } = evaluatedResult
 
             images.forEach(image => {
-                files.add({
+                media.push({
                     alt: image.alt,
                     filename: generateFilename(image.src),
                     url: image.src,
                     type: image.type
                 })
             })
-            if (videoImageURL) {
-                files.add({
-                    filename: generateFilename(videoImageURL),
-                    originalUrl: videoImageURL,
+
+            videos.forEach(video => {
+                media.push({
+                    filename: generateFilename(video.src),
+                    url: video.src,
                     type: 'video'
                 })
-            }
+            })
 
             const result = {
                 requestUrl: url,
@@ -192,7 +196,7 @@ export class Parser {
                 profileImageURL,
                 createdAt,
                 status,
-                media: Array.from(files)
+                media
             }
             return result
 

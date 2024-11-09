@@ -153,8 +153,8 @@ app.get('/:username/post/:postId', async (req, res) => {
         const images = media.filter(o => o.type === 'photo' || o.type === 'thumbnail')
         console.log('images:', images)
 
-        const videoOriginalUrl = media.filter(o => o.type === 'video')[0]?.originalUrl
-        console.log(`videoOriginalUrl: ${videoOriginalUrl}\n`)
+        const videos = media.filter(o => o.type === 'video')
+        console.log('videos:', videos)
 
         let renderData = {
             url: threadsUrl,
@@ -164,24 +164,24 @@ app.get('/:username/post/:postId', async (req, res) => {
             createdAt,
             profileImageURL,
             images,
+            videos: [],
             hasImage: images.filter(o => o.type === 'photo').length > 0,
-            hasVideo: false,
+            hasVideo: videos.length > 0,
             status: status || {}
         }
 
-        if (videoOriginalUrl) {
-            let newParams = encodeVideoURL2Params(videoOriginalUrl)
+        videos.forEach((video, index) => {
+            let newParams = encodeVideoURL2Params(video.url)
             newParams.append("___t", generateRandomIdentifier())
             const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
-            console.log(`videoEncodedUrl: ${videoEncodedUrl}\n`)
-            renderData.video = {
+            console.log(`[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}\n`)
+            renderData.videos.push({
                 url: videoEncodedUrl,
                 format: 'mp4',
                 width: 320,
                 height: 320
-            }
-            renderData.hasVideo = true
-        }
+            })
+        })
 
         const html = render(renderData)
         res.send(html)
