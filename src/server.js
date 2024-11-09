@@ -2,6 +2,7 @@ import express from 'express'
 import axios from 'axios'
 import path from 'path'
 import { Parser } from './parser.js'
+import render from './renderer.js'
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -158,72 +159,39 @@ app.get('/:username/post/:postId', async (req, res) => {
         const videoOriginalUrl = media.filter(o => o.type === 'video')[0]?.originalUrl
         console.log(`videoOriginalUrl: ${videoOriginalUrl}\n`)
 
-        const text = description?.trim()?.length > 0 ? description : imageAlt
+        let renderData = {
+            url: threadsUrl,
+            username,
+            description: description?.trim()?.length > 0 ? description : imageAlt,
+            hasImage: false,
+            hasVideo: false
+        }
+
+        if (imageUrl) {
+            renderData.image = {
+                url: imageUrl,
+                alt: imageAlt
+            }
+            renderData.hasImage = true
+        }
 
         if (videoOriginalUrl) {
             let newParams = encodeVideoURL2Params(videoOriginalUrl)
             newParams.append("___t", generateRandomIdentifier())
             const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
             console.log(`videoEncodedUrl: ${videoEncodedUrl}\n`)
-
-            const external = {
+            renderData.video = {
                 url: videoEncodedUrl,
                 thumbnailUrl: imageUrl,
                 format: 'mp4',
                 width: 320,
                 height: 320
             }
-            res.send(
-                `<html>
-                    <head>
-                        <meta property="og:title" content="Thread from ${username}"/>
-                        <meta name="twitter:description" content="${text}">
-                        <meta property="og:url" content="${threadsUrl}"/>
-                        <meta property="twitter:player" content="${external.url}">
-                        <meta property="twitter:player:stream" content="${external.url}"/>
-                        <meta property="twitter:player:stream:content_type" content="${external.format}"/>
-                        <meta property="twitter:player:width" content="${external.width}">
-                        <meta property="twitter:player:height" content="${external.height}">
-                        <meta property="og:type" content="video.other">
-                        <meta property="og:video:url" content="${external.url}">
-                        <meta property="og:video:secure_url" content="${external.url}">
-                        <meta property="og:video:width" content="${external.width}">
-                        <meta property="og:video:height" content="${external.height}">
-                        <meta property="og:image" content="${external.thumbnailUrl}">
-                    </head>
-                </html>
-                `
-            )
-            return
+            renderData.hasVideo = true
         }
 
-        if (imageUrl) {
-            res.send(
-                `<html>
-                    <head>
-                        <meta name="twitter:card" content="summary_large_image">
-                        <meta property="og:title" content="Thread from ${username}"/>
-                        <meta name="twitter:description" content="${text}">
-                        <meta property="twitter:image" content="${imageUrl}">
-                        <meta property="og:url" content="${threadsUrl}"/>
-                        <meta property="og:image" content="${imageUrl}">
-                    </head>
-                </html>
-                `
-            )
-            return
-        }
-
-        return res.send(
-            `<html>
-                <head>
-                    <meta property="og:title" content="Thread from ${username}"/>
-                    <meta name="twitter:description" content="${text}">
-                    <meta property="og:url" content="${threadsUrl}"/>
-                </head>
-            </html>
-            `
-        )
+        const html = render(renderData)
+        res.send(html)
 
     } catch (error) {
         console.error('Error:', error)
