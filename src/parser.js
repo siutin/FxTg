@@ -87,23 +87,83 @@ export class Parser {
                         return video ? video.src : null
                     }
 
+                    function getCreatedAt(div) {
+                        const time = div.querySelector("time")
+                        return time ? time.dateTime : null
+                    }
+
+                    function getProfileImageURL(div) {
+                        const image = div.querySelector("img[alt$='profile picture']")
+                        return image ? image.src : null
+                    }
+
+                    function getAuthorName(document) {
+                        const head = document.querySelector("head")
+                        if (head) {
+                            const content = head.querySelector("meta[property='og:title']")?.content
+                            if (content) {
+                                const splits = content.split(" ")
+                                return splits.length > 0 ? splits[0] : null
+                            }
+                            return null
+                        }
+                    }
+
+                    function getStatus(div) {
+                        const likeElement = div.querySelector('svg[aria-label="Like"]')
+                        const likeCount = parseInt(likeElement?.nextElementSibling?.innerText) || 0
+
+                        const replyElement = div.querySelector('svg[aria-label="Reply"]')
+                        const replyCount = parseInt(replyElement?.nextElementSibling?.innerText) || 0
+
+                        const repostElement = div.querySelector('svg[aria-label="Repost"]')
+                        const repostCount = parseInt(repostElement?.nextElementSibling?.innerText) || 0
+
+                        const shareElement = div.querySelector('svg[aria-label="Share"]')
+                        const shareCount = parseInt(shareElement?.nextElementSibling?.innerText) || 0
+
+                        return { likeCount, replyCount, repostCount, shareCount }
+                    }
+
                     const divs = document.querySelectorAll('[data-interactive-id]')
                     if (divs.length > 0) {
                         const div = divs[0]
                         const postImageObject = getPostImageObject(div)
                         const videoImageURL = getVideoImageURL(div)
                         const description = getDescriptionText(div)
-                        return { description, postImageObject, videoImageURL }
+
+                        const authorName = getAuthorName(document)
+                        const profileImageURL = getProfileImageURL(div)
+                        const createdAt = getCreatedAt(div)
+                        const status = getStatus(div)
+
+                        return {
+                            description,
+                            postImageObject,
+                            videoImageURL,
+                            authorName,
+                            profileImageURL,
+                            createdAt,
+                            status
+                        }
                     }
                 } catch (ex) {
                     console.error(ex)
-                    return { description: null, postImageObject: null, videoImageURL: null }
+                    return {
+                        description: null,
+                        postImageObject: null,
+                        videoImageURL: null,
+                        authorName: null,
+                        profileImageURL: null,
+                        createdAt: null,
+                        status: null
+                    }
                 }
             })
 
             if (!evaluatedResult) throw new Error('failed to evaluate page')
 
-            const { description, postImageObject, videoImageURL } = evaluatedResult
+            const { description, postImageObject, videoImageURL, authorName, profileImageURL, createdAt, status } = evaluatedResult
 
             if (postImageObject) {
                 files.add({
@@ -124,6 +184,10 @@ export class Parser {
             const result = {
                 requestUrl: url,
                 description,
+                authorName,
+                profileImageURL,
+                createdAt,
+                status,
                 media: Array.from(files)
             }
             return result

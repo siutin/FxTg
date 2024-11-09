@@ -148,7 +148,7 @@ app.get('/:username/post/:postId', async (req, res) => {
         const data = await parser.parse(threadsUrl)
         console.log('parsed data:', data)
 
-        const { requestUrl, description, media } = data
+        const { requestUrl, description, media, authorName, profileImageURL, createdAt, status } = data
 
         const imageObject = media.filter(o => o.type === 'image')[0]
         console.log('imageObject:', imageObject)
@@ -161,10 +161,14 @@ app.get('/:username/post/:postId', async (req, res) => {
 
         let renderData = {
             url: threadsUrl,
+            authorName,
             username,
             description: description?.trim()?.length > 0 ? description : imageAlt,
+            createdAt,
+            profileImageURL,
             hasImage: false,
-            hasVideo: false
+            hasVideo: false,
+            status: status || {}
         }
 
         if (imageUrl) {
