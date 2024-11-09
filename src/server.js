@@ -3,6 +3,8 @@ import axios from 'axios'
 import path from 'path'
 import { Parser } from './parser.js'
 import render from './renderer.js'
+import { loadImage } from 'canvas'
+import { Mosaic } from './mosaic.js'
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -39,6 +41,30 @@ app.use(express.static('public'))
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'))
+})
+
+app.get('/mosaic', async (req, res) => {
+    const imageUrls = req.query.imageUrls
+
+    const canvasWidth = 768
+
+    try {
+        // Load all images first
+        const loadedImages = await Promise.all(imageUrls.map(url => loadImage(url)))
+        console.log('Loaded images:', loadedImages)
+
+        const mosaic = new Mosaic(loadedImages, canvasWidth)
+        const canvas = mosaic.draw()
+
+        // Send response
+        res.setHeader('Content-Type', 'image/png')
+        const buffer = canvas.toBuffer('image/png')
+        res.send(buffer)
+
+    } catch (err) {
+        console.error('Error creating mosaic:', err)
+        res.status(500).send('Error creating mosaic')
+    }
 })
 
 app.get('/media_download', async (req, res) => {
