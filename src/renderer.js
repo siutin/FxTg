@@ -18,14 +18,22 @@ function renderStatus(data) {
     return `<p>${data.likeCount} ❤️ ${data.replyCount} 💬 ${data.repostCount} 🔁 ${data.shareCount}</p>`
 }
 
+function getThumbnailUrl(data) {
+    return data.images.filter(o => o.type === 'thumbnail')[0]?.url
+}
+
 function renderInstantView(data) {
     function generateMediaTag(data) {
+        const elements = []
         if (data.hasVideo) {
-            return `<video src="${data.video.url}" controls></video>`
+            elements.push(`<video src="${data.video.url}" controls poster="${getThumbnailUrl(data)}"></video>`)
         }
-        else if (data.hasImage) {
-            return `<img src="${data.image.url}" alt="${data.image.alt}" />`
+        if (data.hasImage) {
+            data.images
+                .filter(o => o.type === 'photo')
+                .forEach(image => elements.push(`<img src="${image.url}" alt="${image.alt}" />`))
         }
+        return elements.join('')
     }
 
     return {
@@ -66,8 +74,8 @@ function renderImage(data) {
     return {
         metaArray: [
             `<meta name="twitter:card" content="summary_large_image">`,
-            `<meta property="twitter:image" content="${data.image.url}">`,
-            `<meta property="og:image" content="${data.image.url}">`
+            `<meta property="twitter:image" content="${data.images[0].url}">`,
+            `<meta property="og:image" content="${data.images[0].url}">`
         ]
     }
 }
@@ -85,7 +93,7 @@ function renderVideo(data) {
             `<meta property="og:video:secure_url" content="${data.video.url}">`,
             `<meta property="og:video:width" content="${data.video.width}">`,
             `<meta property="og:video:height" content="${data.video.height}">`,
-            `<meta property="og:image" content="${data.video.thumbnailUrl}">`
+            `<meta property="og:image" content="${getThumbnailUrl(data)}">`
         ]
     }
 }

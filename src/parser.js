@@ -74,12 +74,16 @@ export class Parser {
                         return h1.innerText
                     }
 
-                    function getPostImageObject(div) {
-                        const multi = div.querySelector("picture img")
-                        if (multi) return { src: multi.src, alt: multi.alt }
-                        const single = div.querySelector("img[height='100%']")
-                        if (single) return { src: single.src, alt: single.alt }
-                        return null
+                    function getImages(div) {
+                        const images = div.querySelectorAll("img[height='100%'],picture > img")
+                        return Array.from(images).map(image => {
+                            const video = image.nextElementSibling?.querySelector("video")
+                            return {
+                                src: image.src,
+                                alt: image.alt,
+                                type: video ? 'thumbnail' : 'photo'
+                            }
+                        })
                     }
 
                     function getVideoImageURL(div) {
@@ -128,7 +132,7 @@ export class Parser {
                     const divs = document.querySelectorAll('[data-interactive-id]')
                     if (divs.length > 0) {
                         const div = divs[0]
-                        const postImageObject = getPostImageObject(div)
+                        const images = getImages(div)
                         const videoImageURL = getVideoImageURL(div)
                         const description = getDescriptionText(div)
 
@@ -139,7 +143,7 @@ export class Parser {
 
                         return {
                             description,
-                            postImageObject,
+                            images,
                             videoImageURL,
                             authorName,
                             profileImageURL,
@@ -151,7 +155,7 @@ export class Parser {
                     console.error(ex)
                     return {
                         description: null,
-                        postImageObject: null,
+                        images: null,
                         videoImageURL: null,
                         authorName: null,
                         profileImageURL: null,
@@ -163,16 +167,16 @@ export class Parser {
 
             if (!evaluatedResult) throw new Error('failed to evaluate page')
 
-            const { description, postImageObject, videoImageURL, authorName, profileImageURL, createdAt, status } = evaluatedResult
+            const { description, images, videoImageURL, authorName, profileImageURL, createdAt, status } = evaluatedResult
 
-            if (postImageObject) {
+            images.forEach(image => {
                 files.add({
-                    alt: postImageObject.alt,
-                    filename: generateFilename(postImageObject.src),
-                    originalUrl: postImageObject.src,
-                    type: 'image'
+                    alt: image.alt,
+                    filename: generateFilename(image.src),
+                    url: image.src,
+                    type: image.type
                 })
-            }
+            })
             if (videoImageURL) {
                 files.add({
                     filename: generateFilename(videoImageURL),

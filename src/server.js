@@ -150,11 +150,8 @@ app.get('/:username/post/:postId', async (req, res) => {
 
         const { requestUrl, description, media, authorName, profileImageURL, createdAt, status } = data
 
-        const imageObject = media.filter(o => o.type === 'image')[0]
-        console.log('imageObject:', imageObject)
-
-        const imageUrl = imageObject?.originalUrl
-        const imageAlt = imageObject?.alt
+        const images = media.filter(o => o.type === 'photo' || o.type === 'thumbnail')
+        console.log('images:', images)
 
         const videoOriginalUrl = media.filter(o => o.type === 'video')[0]?.originalUrl
         console.log(`videoOriginalUrl: ${videoOriginalUrl}\n`)
@@ -163,20 +160,13 @@ app.get('/:username/post/:postId', async (req, res) => {
             url: threadsUrl,
             authorName,
             username,
-            description: description?.trim()?.length > 0 ? description : imageAlt,
+            description: description?.trim()?.length > 0 ? description : images.filter(o => o.type === 'photo')[0]?.alt,
             createdAt,
             profileImageURL,
-            hasImage: false,
+            images,
+            hasImage: images.filter(o => o.type === 'photo').length > 0,
             hasVideo: false,
             status: status || {}
-        }
-
-        if (imageUrl) {
-            renderData.image = {
-                url: imageUrl,
-                alt: imageAlt
-            }
-            renderData.hasImage = true
         }
 
         if (videoOriginalUrl) {
@@ -186,7 +176,6 @@ app.get('/:username/post/:postId', async (req, res) => {
             console.log(`videoEncodedUrl: ${videoEncodedUrl}\n`)
             renderData.video = {
                 url: videoEncodedUrl,
-                thumbnailUrl: imageUrl,
                 format: 'mp4',
                 width: 320,
                 height: 320
