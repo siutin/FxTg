@@ -25,16 +25,16 @@ function getThumbnailUrl(data, index) {
 function renderInstantView(data) {
     function generateMediaTag(data) {
         const elements = []
-        if (data.hasVideo) {
-            data.videos.forEach((video, index) => {
-                elements.push(`<video src="${video.url}" controls poster="${getThumbnailUrl(data, index)}"></video>`)
-            })
-        }
-        if (data.hasImage) {
-            data.images
-                .filter(o => o.type === 'photo')
-                .forEach(image => elements.push(`<img src="${image.url}" alt="${image.alt}" />`))
-        }
+
+        let videoIndex = 0
+        data.images.forEach(image => {
+            if (image.type === 'photo') {
+                elements.push(`<img src="${image.url}" alt="${image.alt}" />`)
+            } else if (image.type === 'thumbnail') {
+                elements.push(`<video src="${data.videos[videoIndex].url}" controls poster="${getThumbnailUrl(data, videoIndex)}"></video>`)
+                videoIndex++
+            }
+        })
         return elements.join('')
     }
 
