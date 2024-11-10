@@ -4,7 +4,11 @@ export class ImageUrlsManager {
     constructor(filePath) {
         this.imageUrlsMap = {}
         this.filePath = filePath
-        this.loadFromDisk()
+        this.load()
+    }
+
+    get(key) {
+        return this.imageUrlsMap[key]
     }
 
     async add(key, urls) {
@@ -12,10 +16,10 @@ export class ImageUrlsManager {
             urls,
             timestamp: Date.now()
         }
-        return this.saveToDisk()
+        return this.save()
     }
 
-    async loadFromDisk() {
+    async load() {
         if (!(await fsPromises.stat(this.filePath).catch(() => false))) {
             throw new Error(`File ${this.filePath} not exists`)
         }
@@ -23,7 +27,7 @@ export class ImageUrlsManager {
         Object.assign(this.imageUrlsMap, JSON.parse(data))
     }
 
-    async saveToDisk() {
+    async save() {
         await fsPromises.writeFile(this.filePath, JSON.stringify(this.imageUrlsMap))
     }
 
@@ -36,12 +40,8 @@ export class ImageUrlsManager {
                     delete this.imageUrlsMap[key]
                 }
             })
-            await this.saveToDisk()
+            await this.save()
             console.log(`[${new Date().toISOString()}] imageUrlsMap after cleaning: ${Object.keys(this.imageUrlsMap).length}`)
         }, interval)
-    }
-
-    saveBeforeShutdown() {
-        this.saveToDisk()
     }
 }

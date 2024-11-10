@@ -21,9 +21,9 @@ process.on('SIGINT', () => {
 const imageUrlsManager = new ImageUrlsManager('./imageUrls.json')
 imageUrlsManager.autoCleanUp()
 
-// Save imageUrlsMap to disk before server shuts down
+// Save imageUrls to disk before server shuts down
 process.on('SIGINT', () => {
-    imageUrlsManager.saveBeforeShutdown()
+    imageUrlsManager.save()
     parser.close()
     process.exit(0)
 })
@@ -58,7 +58,7 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
 
     const { username, postId } = req.params
 
-    const imageUrls = imageUrlsManager.imageUrlsMap[`${username}|${postId}`]?.urls || []
+    const imageUrls = imageUrlsManager.get(`${username}|${postId}`)?.urls || []
     if (imageUrls.length === 0) {
         return res.status(404).json({ success: false, message: 'No image urls found' })
     }
