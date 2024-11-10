@@ -73,11 +73,12 @@ function renderText(data) {
 }
 
 function renderImage(data) {
+    const url = data.images.length > 0 ? data.mosaicUrl : data.images[0].url
     return {
         metaArray: [
             `<meta name="twitter:card" content="summary_large_image">`,
-            `<meta property="twitter:image" content="${data.images[0].url}">`,
-            `<meta property="og:image" content="${data.images[0].url}">`
+            `<meta property="twitter:image" content="${url}">`,
+            `<meta property="og:image" content="${url}">`
         ]
     }
 }

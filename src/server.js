@@ -63,7 +63,7 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
         return res.status(404).json({ success: false, message: 'No image urls found' })
     }
 
-    const canvasWidth = 768
+    const canvasWidth = 1024
     try {
         // Load all images first
         const loadedImages = await Promise.all(imageUrls.map(url => loadImage(url)))
@@ -200,6 +200,7 @@ app.get('/:username/post/:postId', async (req, res) => {
 
         let renderData = {
             url: threadsUrl,
+            mosaicUrl: `${baseUrl}/mosaic/${username}/post/${postId}`,
             authorName,
             username,
             description: description?.trim()?.length > 0 ? description : images.filter(o => o.type === 'photo')[0]?.alt,
