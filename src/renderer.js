@@ -5,13 +5,19 @@ export default function (data) {
         }
     ]
 
-    if (data.images[0]?.type === 'thumbnail') {
+    const isFirstImageThumbnail = data.images[0]?.type === 'thumbnail'
+    if (isFirstImageThumbnail) {
         elements.push(renderVideo(data))
     } else if (data.hasImage) {
         elements.push(renderImage(data))
     }
+
     elements.push(renderText(data))
-    elements.push(renderInstantView(data))
+
+    // render instant view only if the first media is not a video
+    if (!isFirstImageThumbnail) {
+        elements.push(renderInstantView(data))
+    }
 
     const meta = elements.filter(element => element.metaArray).flatMap(element => element.metaArray).join('')
     const body = elements.filter(element => element.bodyArray).flatMap(element => element.bodyArray).join('')
