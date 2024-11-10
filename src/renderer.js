@@ -1,5 +1,9 @@
 export default function (data) {
-    const elements = []
+    const elements = [
+        {
+            metaArray: [`<meta property="og:site_name" content="FxThreads"/>`]
+        }
+    ]
 
     if (data.hasVideo) {
         elements.push(renderVideo(data))
