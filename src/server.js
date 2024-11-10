@@ -5,6 +5,7 @@ import { Parser } from './parser.js'
 import render from './renderer.js'
 import { loadImage } from 'canvas'
 import { Mosaic } from './mosaic.js'
+import { ImageUrlsManager } from './cache.js'
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -13,6 +14,16 @@ const baseUrl = process.env.BASE_URL || `http://localhost:${port}`
 const parser = new Parser()
 parser.start()
 process.on('SIGINT', () => {
+    parser.close()
+    process.exit(0)
+})
+
+const imageUrlsManager = new ImageUrlsManager('./imageUrls.json')
+imageUrlsManager.autoCleanUp()
+
+// Save imageUrlsMap to disk before server shuts down
+process.on('SIGINT', () => {
+    imageUrlsManager.saveBeforeShutdown()
     parser.close()
     process.exit(0)
 })
@@ -43,11 +54,16 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'))
 })
 
-app.get('/mosaic', async (req, res) => {
-    const imageUrls = req.query.imageUrls
+app.get('/mosaic/:username/post/:postId', async (req, res) => {
+
+    const { username, postId } = req.params
+
+    const imageUrls = imageUrlsManager.imageUrlsMap[`${username}|${postId}`]?.urls || []
+    if (imageUrls.length === 0) {
+        return res.status(404).json({ success: false, message: 'No image urls found' })
+    }
 
     const canvasWidth = 768
-
     try {
         // Load all images first
         const loadedImages = await Promise.all(imageUrls.map(url => loadImage(url)))
@@ -208,6 +224,8 @@ app.get('/:username/post/:postId', async (req, res) => {
                 height: 320
             })
         })
+
+        imageUrlsManager.add(`${username}|${postId}`, images.map(o => o.url))
 
         const html = render(renderData)
         res.send(html)
