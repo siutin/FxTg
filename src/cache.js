@@ -1,47 +1,57 @@
 import { promises as fsPromises } from 'fs'
 
-export class ImageUrlsManager {
+export class Cache {
     constructor(filePath) {
-        this.imageUrlsMap = {}
+        this.map = {}
         this.filePath = filePath
         this.load()
     }
 
-    get(key) {
-        return this.imageUrlsMap[key]
+    getValue(key) {
+        return this.map[key]?.value
     }
 
-    async add(key, urls) {
-        this.imageUrlsMap[key] = {
-            urls,
+    getTimestamp(key) {
+        return this.map[key]?.timestamp
+    }
+
+    async add(key, value) {
+        this.map[key] = {
+            value,
             timestamp: Date.now()
         }
         return this.save()
     }
 
     async load() {
-        if (!(await fsPromises.stat(this.filePath).catch(() => false))) {
-            throw new Error(`File ${this.filePath} not exists`)
+        try {
+            await fsPromises.stat(this.filePath)
+            const data = await fsPromises.readFile(this.filePath)
+            Object.assign(this.map, JSON.parse(data))
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                console.warn(`File ${this.filePath} does not exist. Initializing empty map.`)
+            } else {
+                throw error
+            }
         }
-        const data = await fsPromises.readFile(this.filePath)
-        Object.assign(this.imageUrlsMap, JSON.parse(data))
     }
 
     async save() {
-        await fsPromises.writeFile(this.filePath, JSON.stringify(this.imageUrlsMap))
+        await fsPromises.writeFile(this.filePath, JSON.stringify(this.map))
     }
 
     async autoCleanUp(window = 1000 * 60 * 60, interval = 1000 * 60 * 60) {
         setInterval(async () => {
-            console.log(`[${new Date().toISOString()}] cleaning imageUrlsMap: ${Object.keys(this.imageUrlsMap).length}`)
-            // remove the image urls that are older than 1 hour         
-            Object.keys(this.imageUrlsMap).forEach(key => {
-                if (Date.now() - this.imageUrlsMap[key].timestamp > window) {
-                    delete this.imageUrlsMap[key]
+            console.log(`[${new Date().toISOString()}] ${this.constructor.name} Cleaning: ${Object.keys(this.map).length}`)
+            // Remove image URLs older than the specified window
+            Object.keys(this.map).forEach(key => {
+                if (Date.now() - this.getTimestamp(key) > window) {
+                    delete this.map[key]
                 }
             })
             await this.save()
-            console.log(`[${new Date().toISOString()}] imageUrlsMap after cleaning: ${Object.keys(this.imageUrlsMap).length}`)
+            console.log(`[${new Date().toISOString()}] ${this.constructor.name} after cleaning: ${Object.keys(this.map).length}`)
         }, interval)
     }
 }

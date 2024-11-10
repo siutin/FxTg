@@ -5,11 +5,12 @@ import { Parser } from './parser.js'
 import render from './renderer.js'
 import { loadImage } from 'canvas'
 import { Mosaic } from './mosaic.js'
-import { ImageUrlsManager } from './cache.js'
+import { Cache } from './cache.js'
 
 const app = express()
 const port = process.env.PORT || 3000
 const baseUrl = process.env.BASE_URL || `http://localhost:${port}`
+const cacheFilePath = process.env.CACHE_FILE_PATH || './cache.json'
 
 const parser = new Parser()
 parser.start()
@@ -18,12 +19,12 @@ process.on('SIGINT', () => {
     process.exit(0)
 })
 
-const imageUrlsManager = new ImageUrlsManager('./imageUrls.json')
-imageUrlsManager.autoCleanUp()
+const cache = new Cache(cacheFilePath)
+cache.autoCleanUp()
 
-// Save imageUrls to disk before server shuts down
+// Save cache to disk before server shuts down
 process.on('SIGINT', () => {
-    imageUrlsManager.save()
+    cache.save()
     parser.close()
     process.exit(0)
 })
@@ -58,7 +59,7 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
 
     const { username, postId } = req.params
 
-    const imageUrls = imageUrlsManager.get(`${username}|${postId}`)?.urls || []
+    const imageUrls = cache.getValue(`${username}|${postId}`) || []
     if (imageUrls.length === 0) {
         return res.status(404).json({ success: false, message: 'No image urls found' })
     }
@@ -226,7 +227,7 @@ app.get('/:username/post/:postId', async (req, res) => {
             })
         })
 
-        imageUrlsManager.add(`${username}|${postId}`, images.map(o => o.url))
+        cache.add(`${username}|${postId}`, images.map(o => o.url))
 
         const html = render(renderData)
         res.send(html)
