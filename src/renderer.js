@@ -77,7 +77,7 @@ function renderText(data) {
 }
 
 function renderImage(data) {
-    const url = data.images.length > 0 ? data.mosaicUrl : data.images[0].url
+    const url = data.images.length > 1 ? data.mosaicUrl : data.images[0].url
     return {
         metaArray: [
             `<meta name="twitter:card" content="summary_large_image">`,
