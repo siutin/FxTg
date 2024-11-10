@@ -5,7 +5,7 @@ export default function (data) {
         }
     ]
 
-    if (data.hasVideo) {
+    if (data.images[0]?.type === 'thumbnail') {
         elements.push(renderVideo(data))
     } else if (data.hasImage) {
         elements.push(renderImage(data))
