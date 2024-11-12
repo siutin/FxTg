@@ -204,7 +204,7 @@ app.get('/:username/post/:postId', async (req, res) => {
             mosaicUrl: `${baseUrl}/mosaic/${username}/post/${postId}`,
             authorName,
             username,
-            description: description?.trim()?.length > 0 ? description : images.filter(o => o.type === 'photo')[0]?.alt,
+            description: (description?.trim()?.length > 0 ? description : images.filter(o => o.type === 'photo')[0]?.alt) || "",
             createdAt,
             profileImageURL,
             images,
