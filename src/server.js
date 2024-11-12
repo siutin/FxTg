@@ -194,6 +194,7 @@ app.get('/:username/post/:postId', async (req, res) => {
 
         const { username, postId } = req.params
         const threadsUrl = `https://www.threads.net/${username}/post/${postId}`
+        const imgIndex = /^\d+$/.test(req.query.img_index) ? parseInt(req.query.img_index) : null
 
         const userAgent = req.headers['user-agent']
         logger.log('info', `User Agent: ${userAgent}`)
@@ -213,9 +214,13 @@ app.get('/:username/post/:postId', async (req, res) => {
         const videos = media.filter(o => o.type === 'video')
         logger.log('info', 'videos:', { videos })
 
+        // validate imgIndex
+        const mediaIndex = (imgIndex < 1 || imgIndex > images.length) ? null : imgIndex - 1
+
         let renderData = {
             url: threadsUrl,
             mosaicUrl: `${baseUrl}/mosaic/${username}/post/${postId}`,
+            mediaIndex,
             authorName,
             username,
             description: (description?.trim()?.length > 0 ? description : images.filter(o => o.type === 'photo')[0]?.alt) || "",
