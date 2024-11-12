@@ -54,6 +54,18 @@ function decodeVideoURL(value) {
 
 app.use(express.static('public'))
 
+// middleware to measure duration
+app.use((req, res, next) => {
+    const start = process.hrtime()
+    const originalLog = logger.log.bind(logger)
+    logger.log = (level, message, ...meta) => {
+        const duration = process.hrtime(start)
+        const durationInMs = (duration[0] * 1e3 + duration[1] / 1e6).toFixed(2)
+        originalLog(level, message, { duration: Number(durationInMs), ...meta })
+    }
+    next()
+})
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'))
 })

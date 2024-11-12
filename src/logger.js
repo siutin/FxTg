@@ -1,7 +1,6 @@
 import winston from 'winston'
 
-const logFormat = winston.format.printf(({ timestamp, level, message, ...meta }) => {
-    const duration = process.uptime() * 1000
+const logFormat = winston.format.printf(({ timestamp, level, message, duration = 0, ...meta }) => {
     const durationDisplay = duration >= 1000
         ? `${(duration / 1000).toFixed(2)}s`
         : `${duration.toFixed(0)}ms`
