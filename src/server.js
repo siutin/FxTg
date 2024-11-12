@@ -62,14 +62,14 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
 
     const imageUrls = cache.getValue(`${username}|${postId}`) || []
     if (imageUrls.length === 0) {
-        return res.status(404).json({ success: false, message: 'No image urls found' })
+        return res.status(404).send('image urls found')
     }
 
     const canvasWidth = 1024
     try {
         // Load all images first
         const loadedImages = await Promise.all(imageUrls.map(url => loadImage(url)))
-        logger.log('info', 'Loaded images:', loadedImages)
+        logger.log('info', 'Loaded images:', { loadedImages: loadedImages })
 
         const mosaic = new Mosaic(loadedImages, canvasWidth)
         const canvas = mosaic.draw()
@@ -183,22 +183,22 @@ app.get('/:username/post/:postId', async (req, res) => {
         const threadsUrl = `https://www.threads.net/${username}/post/${postId}`
 
         const userAgent = req.headers['user-agent']
-        logger.log('info', `User Agent: ${userAgent}\n`)
+        logger.log('info', `User Agent: ${userAgent}`)
 
         if (!userAgent.includes('Telegram')) {
             return res.status(301).redirect(threadsUrl)
         }
 
         const data = await parser.parse(threadsUrl)
-        logger.log('info', 'parsed data:', data)
+        logger.log('info', 'parsed data:', { data })
 
         const { requestUrl, description, media, authorName, profileImageURL, createdAt, status } = data
 
         const images = media.filter(o => o.type === 'photo' || o.type === 'thumbnail')
-        logger.log('info', 'images:', images)
+        logger.log('info', 'images:', { images })
 
         const videos = media.filter(o => o.type === 'video')
-        logger.log('info', 'videos:', videos)
+        logger.log('info', 'videos:', { videos })
 
         let renderData = {
             url: threadsUrl,
@@ -219,7 +219,7 @@ app.get('/:username/post/:postId', async (req, res) => {
             let newParams = encodeVideoURL2Params(video.url)
             newParams.append("___t", generateRandomIdentifier())
             const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
-            logger.log('info', `[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}\n`)
+            logger.log('info', `[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}`)
             renderData.videos.push({
                 url: videoEncodedUrl,
                 format: 'mp4',
