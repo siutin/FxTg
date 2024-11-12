@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer'
 import crypto from 'crypto'
 import path from 'path'
+import { logger } from './logger.js'
 
 function cleanURL(url) {
     return url.replace(/\?(.+)/, '')
@@ -155,7 +156,7 @@ export class Parser {
                         }
                     }
                 } catch (ex) {
-                    console.error(ex)
+                    logger.log('error', ex)
                     return {
                         description: null,
                         images: null,
@@ -201,7 +202,7 @@ export class Parser {
             return result
 
         } catch (ex) {
-            console.error(ex)
+            logger.log('error', ex)
         } finally {
             await page.close()
         }
@@ -212,6 +213,6 @@ if (process.env.url) {
     const parser = new Parser()
     await parser.start()
     const result = await parser.parse(process.env.url)
-    console.log(result)
+    logger.log('info', result)
     await parser.close()
 }

@@ -30,7 +30,7 @@ export class Cache {
             Object.assign(this.map, JSON.parse(data))
         } catch (error) {
             if (error.code === 'ENOENT') {
-                console.warn(`File ${this.filePath} does not exist. Initializing empty map.`)
+                logger.log('warn', `File ${this.filePath} does not exist. Initializing empty map.`)
             } else {
                 throw error
             }
@@ -43,7 +43,7 @@ export class Cache {
 
     async autoCleanUp(window = 1000 * 60 * 60, interval = 1000 * 60 * 60) {
         setInterval(async () => {
-            console.log(`[${new Date().toISOString()}] ${this.constructor.name} Cleaning: ${Object.keys(this.map).length}`)
+            logger.log('info', `[${new Date().toISOString()}] ${this.constructor.name} Cleaning: ${Object.keys(this.map).length}`)
             // Remove image URLs older than the specified window
             Object.keys(this.map).forEach(key => {
                 if (Date.now() - this.getTimestamp(key) > window) {
@@ -51,7 +51,7 @@ export class Cache {
                 }
             })
             await this.save()
-            console.log(`[${new Date().toISOString()}] ${this.constructor.name} after cleaning: ${Object.keys(this.map).length}`)
+            logger.log('info', `[${new Date().toISOString()}] ${this.constructor.name} after cleaning: ${Object.keys(this.map).length}`)
         }, interval)
     }
 }

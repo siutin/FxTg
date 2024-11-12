@@ -1,6 +1,7 @@
 import express from 'express'
 import axios from 'axios'
 import path from 'path'
+import { logger } from './logger.js'
 import { Parser } from './parser.js'
 import render from './renderer.js'
 import { loadImage } from 'canvas'
@@ -68,7 +69,7 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
     try {
         // Load all images first
         const loadedImages = await Promise.all(imageUrls.map(url => loadImage(url)))
-        console.log('Loaded images:', loadedImages)
+        logger.log('info', 'Loaded images:', loadedImages)
 
         const mosaic = new Mosaic(loadedImages, canvasWidth)
         const canvas = mosaic.draw()
@@ -79,16 +80,16 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
         res.send(buffer)
 
     } catch (err) {
-        console.error('Error creating mosaic:', err)
+        logger.log('error', 'Error creating mosaic:', err)
         res.status(500).send('Error creating mosaic')
     }
 })
 
 app.get('/media_download', async (req, res) => {
     const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl
-    console.log(`fullUrl: ${fullUrl}`)
+    logger.log('info', `fullUrl: ${fullUrl}`)
     const fileUrl = decodeVideoURL(fullUrl)
-    console.log(`fileUrl: ${fileUrl}`)
+    logger.log('info', `fileUrl: ${fileUrl}`)
 
     const customUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/450.0.0.38.108;FBBV/564431005;FBDV/iPhone17,1;FBMD/iPhone;FBSN/iOS;FBSV/18.1;FBSS/3;FBID/phone;FBLC/en_GB;FBOP/5;FBRV/567052743]'
     try {
@@ -153,14 +154,14 @@ app.get('/media_download', async (req, res) => {
 
         // Handle streaming errors
         res.on('error', (err) => {
-            console.error('Stream error:', err)
+            logger.log('error', 'Stream error:', err)
             if (!res.headersSent) {
                 res.status(500).send('Error streaming file')
             }
         })
 
     } catch (error) {
-        console.error('Download error:', error)
+        logger.log('error', 'Download error:', error)
         if (!res.headersSent) {
             res.status(500).send('Error downloading file')
         }
@@ -182,22 +183,22 @@ app.get('/:username/post/:postId', async (req, res) => {
         const threadsUrl = `https://www.threads.net/${username}/post/${postId}`
 
         const userAgent = req.headers['user-agent']
-        console.log(`User Agent: ${userAgent}\n`)
+        logger.log('info', `User Agent: ${userAgent}\n`)
 
         if (!userAgent.includes('Telegram')) {
             return res.status(301).redirect(threadsUrl)
         }
 
         const data = await parser.parse(threadsUrl)
-        console.log('parsed data:', data)
+        logger.log('info', 'parsed data:', data)
 
         const { requestUrl, description, media, authorName, profileImageURL, createdAt, status } = data
 
         const images = media.filter(o => o.type === 'photo' || o.type === 'thumbnail')
-        console.log('images:', images)
+        logger.log('info', 'images:', images)
 
         const videos = media.filter(o => o.type === 'video')
-        console.log('videos:', videos)
+        logger.log('info', 'videos:', videos)
 
         let renderData = {
             url: threadsUrl,
@@ -218,7 +219,7 @@ app.get('/:username/post/:postId', async (req, res) => {
             let newParams = encodeVideoURL2Params(video.url)
             newParams.append("___t", generateRandomIdentifier())
             const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
-            console.log(`[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}\n`)
+            logger.log('info', `[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}\n`)
             renderData.videos.push({
                 url: videoEncodedUrl,
                 format: 'mp4',
@@ -233,12 +234,12 @@ app.get('/:username/post/:postId', async (req, res) => {
         res.send(html)
 
     } catch (error) {
-        console.error('Error:', error)
+        logger.log('error', 'Error:', error)
         res.status(500).send('Error fetching thread')
     }
 })
 
 // Start the server
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`)
+    logger.log('info', `Server running at http://localhost:${port}`)
 });
