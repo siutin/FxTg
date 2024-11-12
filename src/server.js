@@ -61,7 +61,7 @@ app.use((req, res, next) => {
     logger.log = (level, message, ...meta) => {
         const duration = process.hrtime(start)
         const durationInMs = (duration[0] * 1e3 + duration[1] / 1e6).toFixed(2)
-        originalLog(level, message, { duration: Number(durationInMs), ...meta })
+        originalLog(level, message, { duration: Number(durationInMs), ...meta[0] })
     }
     next()
 })
