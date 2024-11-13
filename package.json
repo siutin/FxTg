@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon --watch src/ --watch package.json --watch package-lock.json --exec npm start"
+    "dev": "nodemon --watch src/ --watch package.json --watch package-lock.json --exec 'npm run lint && npm run start'",
+    "lint": "npx eslint src/",
+    "lint:fix": "npx eslint src/ --fix"
   },
   "author": "siutin",
   "license": "GPL",
@@ -18,6 +20,9 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "eslint": "^9.14.0",
+    "globals": "^15.12.0",
     "nodemon": "^3.1.7"
   }
 }
