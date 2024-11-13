@@ -220,6 +220,7 @@ app.get('/:username/post/:postId', async (req, res) => {
         const data = await parser.parse(threadsUrl)
         logger.log('debug', 'parsed data:', { data })
 
+        // eslint-disable-next-line no-unused-vars
         const { requestUrl, description, media, authorName, profileImageURL, createdAt, status } = data
 
         const images = media.filter(o => o.type === 'photo' || o.type === 'thumbnail')

@@ -26,19 +26,15 @@ export class Mosaic {
     calculateLayout(targetImagesPerRow) {
         const rows = []
         let currentRow = []
-        let currentRowWidth = 0
 
         this.images.forEach((img, index) => {
-            const normalizedWidth = this.width / targetImagesPerRow
 
             currentRow.push(img)
-            currentRowWidth += normalizedWidth
 
             // Break row when we reach target images per row or it's the last image
             if (currentRow.length === targetImagesPerRow || index === this.images.length - 1) {
                 rows.push([...currentRow])
                 currentRow = []
-                currentRowWidth = 0
             }
         })
 

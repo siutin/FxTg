@@ -61,6 +61,7 @@ export class Parser {
 
             const media = []
 
+            /*global document*/
             const evaluatedResult = await page.evaluate(() => {
                 try {
 
