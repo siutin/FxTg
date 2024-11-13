@@ -61,11 +61,20 @@ function decodeVideoURL(value) {
     return `https://${host}${pathname}?${params.toString()}`
 }
 
+function generateRandomIdentifier(digits = 6) {
+    const random = Math.floor(Math.random() * 1000)
+    return `${random.toString().padStart(digits, "0")}`
+}
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'))
 })
 
 app.get('/mosaic/:username/post/:postId', async (req, res) => {
+
+    const requestId = generateRandomIdentifier()
+    const requestIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+    logger.log('info', `[${requestIp}][${requestId}] ${req.originalUrl} request received`)
 
     const { username, postId } = req.params
 
@@ -78,7 +87,7 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
     try {
         // Load all images first
         const loadedImages = await Promise.all(imageUrls.map(url => loadImage(url)))
-        logger.log('info', 'Loaded images:', { loadedImages: loadedImages })
+        logger.log('debug', `Loaded images: ${loadedImages.length}`)
 
         const mosaic = new Mosaic(loadedImages, canvasWidth)
         const canvas = mosaic.draw()
@@ -92,20 +101,26 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
         logger.log('error', 'Error creating mosaic:', err)
         res.status(500).send('Error creating mosaic')
     }
+    logger.log('info', `[${requestIp}][${requestId}] ${res.statusCode} ${req.originalUrl} request completed`)
 })
 
 app.get('/media_download', async (req, res) => {
+    const requestId = generateRandomIdentifier()
+    const requestIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+    logger.log('info', `[${requestIp}][${requestId}] ${req.originalUrl} request received`)
 
     try {
         if (req.query.length === 0) {
-            return res.status(404).send('File not found')
+            res.status(404).send('File not found')
+            logger.log('info', `[${requestIp}][${requestId}] ${res.statusCode} ${req.originalUrl} request completed`)
+            return
         }
 
         const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl
-        logger.log('info', `fullUrl: ${fullUrl}`)
+        logger.log('debug', `fullUrl: ${fullUrl}`)
 
         const fileUrl = decodeVideoURL(fullUrl)
-        logger.log('info', `fileUrl: ${fileUrl}`)
+        logger.log('debug', `fileUrl: ${fileUrl}`)
 
         const customUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/450.0.0.38.108;FBBV/564431005;FBDV/iPhone17,1;FBMD/iPhone;FBSN/iOS;FBSV/18.1;FBSS/3;FBID/phone;FBLC/en_GB;FBOP/5;FBRV/567052743]'
 
@@ -182,40 +197,36 @@ app.get('/media_download', async (req, res) => {
             res.status(500).send('Error downloading file')
         }
     }
+    logger.log('info', `[${requestIp}][${requestId}] ${res.statusCode} ${req.originalUrl} request completed`)
 })
-
-function generateRandomIdentifier() {
-    const timestamp = Date.now()
-
-    const random = Math.floor(Math.random() * 1000)
-
-    return `${timestamp}${random.toString().padStart(3, "0")}`
-}
 
 app.get('/:username/post/:postId', async (req, res) => {
     try {
+        const requestId = generateRandomIdentifier(6)
+        const requestIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+        logger.log('info', `[${requestIp}][${requestId}] ${req.originalUrl} request received`)
 
         const { username, postId } = req.params
         const threadsUrl = `https://www.threads.net/${username}/post/${postId}`
         const imgIndex = /^\d+$/.test(req.query.img_index) ? parseInt(req.query.img_index) : null
 
         const userAgent = req.headers['user-agent']
-        logger.log('info', `User Agent: ${userAgent}`)
+        logger.log('debug', `User Agent: ${userAgent}`)
 
         if (!userAgent.includes('Telegram')) {
             return res.status(301).redirect(threadsUrl)
         }
 
         const data = await parser.parse(threadsUrl)
-        logger.log('info', 'parsed data:', { data })
+        logger.log('debug', 'parsed data:', { data })
 
         const { requestUrl, description, media, authorName, profileImageURL, createdAt, status } = data
 
         const images = media.filter(o => o.type === 'photo' || o.type === 'thumbnail')
-        logger.log('info', 'images:', { images })
+        logger.log('debug', 'images:', { images })
 
         const videos = media.filter(o => o.type === 'video')
-        logger.log('info', 'videos:', { videos })
+        logger.log('debug', 'videos:', { videos })
 
         // validate imgIndex
         const mediaIndex = (imgIndex < 1 || imgIndex > images.length) ? null : imgIndex - 1
@@ -240,7 +251,7 @@ app.get('/:username/post/:postId', async (req, res) => {
             let newParams = encodeVideoURL2Params(video.url)
             newParams.append("___t", generateRandomIdentifier())
             const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
-            logger.log('info', `[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}`)
+            logger.log('debug', `[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}`)
             renderData.videos.push({
                 url: videoEncodedUrl,
                 format: 'mp4',
@@ -253,6 +264,7 @@ app.get('/:username/post/:postId', async (req, res) => {
 
         const html = render(renderData)
         res.send(html)
+        logger.log('info', `[${requestIp}][${requestId}] ${res.statusCode} ${req.originalUrl} request completed`)
 
     } catch (error) {
         logger.log('error', 'Error:', error)
