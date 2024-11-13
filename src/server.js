@@ -8,26 +8,37 @@ import { loadImage } from 'canvas'
 import { Mosaic } from './mosaic.js'
 import { Cache } from './cache.js'
 
-const app = express()
 const port = process.env.PORT || 3000
 const baseUrl = process.env.BASE_URL || `http://localhost:${port}`
 const cacheFilePath = process.env.CACHE_FILE_PATH || './cache.json'
 
-const parser = new Parser()
-parser.start()
-process.on('SIGINT', () => {
-    parser.close()
-    process.exit(0)
-})
-
 const cache = new Cache(cacheFilePath)
 cache.autoCleanUp()
+
+const parser = new Parser()
+parser.start()
 
 // Save cache to disk before server shuts down
 process.on('SIGINT', () => {
     cache.save()
     parser.close()
     process.exit(0)
+})
+
+const app = express()
+
+app.use(express.static('public'))
+
+// middleware to measure duration
+app.use((req, res, next) => {
+    const start = process.hrtime()
+    const originalLog = logger.log.bind(logger)
+    logger.log = (level, message, ...meta) => {
+        const duration = process.hrtime(start)
+        const durationInMs = (duration[0] * 1e3 + duration[1] / 1e6).toFixed(2)
+        originalLog(level, message, { duration: Number(durationInMs), ...meta[0] })
+    }
+    next()
 })
 
 function encodeVideoURL2Params(value) {
@@ -51,20 +62,6 @@ function decodeVideoURL(value) {
         throw new Error('invalid url')
     return `https://${host}${pathname}?${params.toString()}`
 }
-
-app.use(express.static('public'))
-
-// middleware to measure duration
-app.use((req, res, next) => {
-    const start = process.hrtime()
-    const originalLog = logger.log.bind(logger)
-    logger.log = (level, message, ...meta) => {
-        const duration = process.hrtime(start)
-        const durationInMs = (duration[0] * 1e3 + duration[1] / 1e6).toFixed(2)
-        originalLog(level, message, { duration: Number(durationInMs), ...meta[0] })
-    }
-    next()
-})
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'))
@@ -268,4 +265,4 @@ app.get('/:username/post/:postId', async (req, res) => {
 // Start the server
 app.listen(port, () => {
     logger.log('info', `Server running at http://localhost:${port}`)
-});
+})
