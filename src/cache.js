@@ -1,4 +1,5 @@
 import { promises as fsPromises } from 'fs'
+import { logger } from './logger.js'
 
 export class Cache {
     constructor(filePath) {
