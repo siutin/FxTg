@@ -18,9 +18,7 @@ cache.autoCleanUp()
 const parser = new Parser()
 parser.start()
 
-// Save cache to disk before server shuts down
 process.on('SIGINT', () => {
-    cache.save()
     parser.close()
     process.exit(0)
 })
