@@ -39,6 +39,14 @@ app.use((req, res, next) => {
     next()
 })
 
+// middleware to handle request logging
+app.use((req, res, next) => {
+    req.requestId = generateRandomIdentifier()
+    req.requestIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+    res.on('finish', () => logger.log('http', `[${req.requestIp}][${req.requestId}] ${res.statusCode} ${req.originalUrl}`))
+    next()
+})
+
 function encodeVideoURL2Params(value) {
     const url = new URL(value)
     let params = new URLSearchParams(url.search)
@@ -72,10 +80,6 @@ app.get('/', (req, res) => {
 
 app.get('/mosaic/:username/post/:postId', async (req, res) => {
 
-    const requestId = generateRandomIdentifier()
-    const requestIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress
-    logger.log('info', `[${requestIp}][${requestId}] ${req.originalUrl} request received`)
-
     const { username, postId } = req.params
 
     const imageUrls = cache.getValue(`${username}|${postId}`) || []
@@ -101,18 +105,12 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
         logger.log('error', 'Error creating mosaic:', err)
         res.status(500).send('Error creating mosaic')
     }
-    logger.log('info', `[${requestIp}][${requestId}] ${res.statusCode} ${req.originalUrl} request completed`)
 })
 
 app.get('/media_download', async (req, res) => {
-    const requestId = generateRandomIdentifier()
-    const requestIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress
-    logger.log('info', `[${requestIp}][${requestId}] ${req.originalUrl} request received`)
-
     try {
         if (req.query.length === 0) {
             res.status(404).send('File not found')
-            logger.log('info', `[${requestIp}][${requestId}] ${res.statusCode} ${req.originalUrl} request completed`)
             return
         }
 
@@ -197,15 +195,10 @@ app.get('/media_download', async (req, res) => {
             res.status(500).send('Error downloading file')
         }
     }
-    logger.log('info', `[${requestIp}][${requestId}] ${res.statusCode} ${req.originalUrl} request completed`)
 })
 
 app.get('/:username/post/:postId', async (req, res) => {
     try {
-        const requestId = generateRandomIdentifier(6)
-        const requestIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress
-        logger.log('info', `[${requestIp}][${requestId}] ${req.originalUrl} request received`)
-
         const { username, postId } = req.params
         const threadsUrl = `https://www.threads.net/${username}/post/${postId}`
         const imgIndex = /^\d+$/.test(req.query.img_index) ? parseInt(req.query.img_index) : null
@@ -265,8 +258,6 @@ app.get('/:username/post/:postId', async (req, res) => {
 
         const html = render(renderData)
         res.send(html)
-        logger.log('info', `[${requestIp}][${requestId}] ${res.statusCode} ${req.originalUrl} request completed`)
-
     } catch (error) {
         logger.log('error', 'Error:', error)
         res.status(500).send('Error fetching thread')

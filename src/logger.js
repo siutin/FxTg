@@ -26,7 +26,7 @@ const logFormat = winston.format.printf(({ timestamp, level, message, duration =
 })
 
 export const logger = winston.createLogger({
-    level: 'info',
+    level: 'http',
     format: winston.format.combine(
         winston.format.errors({ stack: true }),
         winston.format.timestamp(),
