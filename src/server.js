@@ -102,19 +102,15 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
 app.get('/media_download', async (req, res) => {
 
     try {
-        if (!req.query.url) {
+        if (req.query.length === 0) {
             return res.status(404).send('File not found')
         }
 
         const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl
         logger.log('info', `fullUrl: ${fullUrl}`)
-        try {
-            const fileUrl = decodeVideoURL(fullUrl)
-            logger.log('info', `fileUrl: ${fileUrl}`)
-        } catch (ex) {
-            logger.log('error', 'Error decoding video url:', ex)
-            return res.status(422).send('invalid url')
-        }
+
+        const fileUrl = decodeVideoURL(fullUrl)
+        logger.log('info', `fileUrl: ${fileUrl}`)
 
         const customUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/450.0.0.38.108;FBBV/564431005;FBDV/iPhone17,1;FBMD/iPhone;FBSN/iOS;FBSV/18.1;FBSS/3;FBID/phone;FBLC/en_GB;FBOP/5;FBRV/567052743]'
 
