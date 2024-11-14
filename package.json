@@ -17,7 +17,8 @@
     "canvas": "^2.11.2",
     "express": "^4.21.1",
     "puppeteer": "^23.7.0",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
