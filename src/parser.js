@@ -19,6 +19,8 @@ export class Parser {
     }
 
     async start() {
+        if (this.browser) return
+        logger.log('debug', `[${this.constructor.name}] Starting browser...`)
         this.browser = await puppeteer.launch({
             headless: "new",
             args: [
@@ -30,16 +32,19 @@ export class Parser {
                 '--window-size=430x932'
             ]
         })
+        logger.log('debug', `[${this.constructor.name}] Browser started`)
     }
 
     async close() {
         if (this.browser) {
             await this.browser.close()
             this.browser = null
+            logger.log('debug', `[${this.constructor.name}] Browser closed`)
         }
     }
 
     async parse(url) {
+        logger.log('debug', `[${this.constructor.name}] Parsing ${url}...`)
         const page = await this.browser.newPage()
         const customUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/450.0.0.38.108;FBBV/564431005;FBDV/iPhone17,1;FBMD/iPhone;FBSN/iOS;FBSV/18.1;FBSS/3;FBID/phone;FBLC/en_GB;FBOP/5;FBRV/567052743]'
         await page.setUserAgent(customUA)
@@ -206,6 +211,7 @@ export class Parser {
             logger.log('error', ex)
         } finally {
             await page.close()
+            logger.log('debug', `[${this.constructor.name}] Page closed`)
         }
     }
 }

@@ -26,9 +26,11 @@ export class Cache {
 
     async load() {
         try {
+            logger.log('debug', `[${this.constructor.name}] Loading cache from ${this.filePath}...`)
             await fsPromises.stat(this.filePath)
             const data = await fsPromises.readFile(this.filePath)
             Object.assign(this.map, JSON.parse(data))
+            logger.log('debug', `[${this.constructor.name}] Cache loaded: ${Object.keys(this.map).length}`)
         } catch (error) {
             if (error.code === 'ENOENT') {
                 logger.log('warn', `File ${this.filePath} does not exist. Initializing empty map.`)
@@ -39,7 +41,9 @@ export class Cache {
     }
 
     async save() {
+        logger.log('debug', `[${this.constructor.name}] Saving cache to ${this.filePath}...`)
         await fsPromises.writeFile(this.filePath, JSON.stringify(this.map))
+        logger.log('debug', `[${this.constructor.name}] Cache saved: ${Object.keys(this.map).length}`)
     }
 
     async autoCleanUp(window = 1000 * 60 * 60, interval = 1000 * 60 * 60) {
