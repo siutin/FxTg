@@ -139,6 +139,16 @@ export class Parser {
                         return { likeCount, replyCount, repostCount, shareCount }
                     }
 
+                    // https://www.threads.net/?error=invalid_post
+                    function isInvalidPost(document) {
+                        const searchParams = new URLSearchParams(document.location.search)
+                        return searchParams.get('error') === 'invalid_post'
+                    }
+
+                    if (isInvalidPost(document)) {
+                        throw new Error('invalid post')
+                    }
+
                     const divs = document.querySelectorAll('[data-interactive-id]')
                     if (divs.length > 0) {
                         const div = divs[0]
