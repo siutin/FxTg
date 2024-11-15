@@ -162,8 +162,8 @@ export class Parser {
                         }
                     }
                 } catch (ex) {
-                    logger.log('error', ex)
                     return {
+                        errorMessage: ex.message,
                         description: null,
                         images: null,
                         videos: null,
@@ -176,8 +176,10 @@ export class Parser {
             })
 
             if (!evaluatedResult) throw new Error('failed to evaluate page')
+                
+            const { errorMessage, description, images, videos, authorName, profileImageURL, createdAt, status } = evaluatedResult
 
-            const { description, images, videos, authorName, profileImageURL, createdAt, status } = evaluatedResult
+            if (errorMessage) throw new Error(errorMessage)
 
             images.forEach(image => {
                 media.push({
