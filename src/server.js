@@ -11,6 +11,11 @@ import { Cache } from './cache.js'
 const port = process.env.PORT || 3000
 const baseUrl = process.env.BASE_URL || `http://localhost:${port}`
 const cacheFilePath = process.env.CACHE_FILE_PATH || './cache.json'
+const whitelistVideoHosts = [
+  '([a-zA-Z0-9-]+)\\.cdninstagram\\.com',
+  'instagram\\.([a-zA-Z0-9-]+)\\.fna\\.fbcdn\\.net',
+]
+const whitelistVideoHostRegex = new RegExp(`^(${whitelistVideoHosts.join('|')})$`)
 
 const cache = new Cache(cacheFilePath)
 cache.autoCleanUp()
@@ -64,9 +69,12 @@ function decodeVideoURL(value) {
     params.delete('___pathname')
     params.delete('___t')
     params.delete('0.mp4')
+    logger.log('debug', `host: ${host} pathname: ${pathname} params: ${params}`)
+
     if (!host || !pathname || params.length === 0)
         throw new Error('invalid url')
-    return `https://${host}${pathname}?${params.toString()}`
+
+    return { host, pathname, params }
 }
 
 function generateRandomIdentifier(digits = 6) {
@@ -117,8 +125,15 @@ app.get('/media_download', async (req, res) => {
         const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl
         logger.log('debug', `fullUrl: ${fullUrl}`)
 
-        const fileUrl = decodeVideoURL(fullUrl)
+        const { host, pathname, params } = decodeVideoURL(fullUrl)
+        const fileUrl = `https://${host}${pathname}?${params.toString()}`
         logger.log('debug', `fileUrl: ${fileUrl}`)
+
+        if (!whitelistVideoHostRegex.test(host)) {
+          logger.log('warn', `host '${host}' is not in whitelist. fullUrl: ${fullUrl}`)
+          res.status(400).send('bad request')
+          return
+        }
 
         const customUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/450.0.0.38.108;FBBV/564431005;FBDV/iPhone17,1;FBMD/iPhone;FBSN/iOS;FBSV/18.1;FBSS/3;FBID/phone;FBLC/en_GB;FBOP/5;FBRV/567052743]'
 
