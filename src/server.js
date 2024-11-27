@@ -1,31 +1,19 @@
 import express from 'express'
 import axios from 'axios'
 import path from 'path'
+import { port, baseUrl, cacheFilePath, browserOptionsPath, whitelistVideoHostRegex } from './config.js'
 import { logger } from './logger.js'
+import loader from './loader.js'
 import { Parser } from './parser.js'
 import render from './renderer.js'
 import { loadImage } from 'canvas'
 import { Mosaic } from './mosaic.js'
 import { Cache } from './cache.js'
-import { loadBrowserOptions } from './config.js'
-
-const port = process.env.PORT || 3000
-const baseUrl = process.env.BASE_URL || `http://localhost:${port}`
-const cacheFilePath = process.env.CACHE_FILE_PATH || './cache.json'
-
-const browserOptionsPath = process.env.BROWSER_OPTIONS_PATH || 'config/base.browserOptions.json'
-const browserOptions = loadBrowserOptions(browserOptionsPath)
-
-const whitelistVideoHosts = [
-  '([a-zA-Z0-9-]+)\\.cdninstagram\\.com',
-  'instagram\\.([a-zA-Z0-9-]+)\\.fna\\.fbcdn\\.net',
-]
-const whitelistVideoHostRegex = new RegExp(`^(${whitelistVideoHosts.join('|')})$`)
 
 const cache = new Cache(cacheFilePath)
 cache.autoCleanUp()
 
-const parser = new Parser({ browserOptions })
+const parser = new Parser({ browserOptions: loader.browserOptions(browserOptionsPath) })
 parser.start()
 
 process.on('SIGINT', () => {

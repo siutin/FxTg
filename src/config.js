@@ -1,16 +1,19 @@
-import fs from 'fs'
-import { logger } from './logger.js'
-
 const logLevel = process.env.LOG_LEVEL || 'http'
+const port = process.env.PORT || 3000
+const baseUrl = process.env.BASE_URL || `http://localhost:${port}`
+const cacheFilePath = process.env.CACHE_FILE_PATH || './cache.json'
+const browserOptionsPath = process.env.BROWSER_OPTIONS_PATH || 'config/browserOptions.json'
+const whitelistVideoHosts = [
+    '([a-zA-Z0-9-]+)\\.cdninstagram\\.com',
+    'instagram\\.([a-zA-Z0-9-]+)\\.fna\\.fbcdn\\.net',
+]
+const whitelistVideoHostRegex = new RegExp(`^(${whitelistVideoHosts.join('|')})$`)
 
-function loadBrowserOptions(path) {
-    try {
-        fs.accessSync(path)
-        logger.log('debug', `load browserOptions from '${path}'`)
-        return JSON.parse(fs.readFileSync(path, 'utf-8'))
-    } catch (ex) {
-        logger.log('error', `load loadBrowserOptions error: ${ex}`)
-    }
+export {
+    logLevel,
+    port,
+    baseUrl,
+    cacheFilePath,
+    browserOptionsPath,
+    whitelistVideoHostRegex
 }
-
-export { logLevel, loadBrowserOptions }
