@@ -123,9 +123,9 @@ app.get('/media_download', async (req, res) => {
         logger.log('debug', `fileUrl: ${fileUrl}`)
 
         if (!whitelistVideoHostRegex.test(host)) {
-          logger.log('warn', `host '${host}' is not in whitelist. fullUrl: ${fullUrl}`)
-          res.status(400).send('bad request')
-          return
+            logger.log('warn', `host '${host}' is not in whitelist. fullUrl: ${fullUrl}`)
+            res.status(400).send('bad request')
+            return
         }
 
         const customUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/450.0.0.38.108;FBBV/564431005;FBDV/iPhone17,1;FBMD/iPhone;FBSN/iOS;FBSV/18.1;FBSS/3;FBID/phone;FBLC/en_GB;FBOP/5;FBRV/567052743]'
@@ -191,14 +191,14 @@ app.get('/media_download', async (req, res) => {
 
         // Handle streaming errors
         res.on('error', (err) => {
-            logger.log('error', 'Stream error:', err)
+            logger.log('error', 'Stream error:', err?.message)
             if (!res.headersSent) {
                 res.status(500).send('Error streaming file')
             }
         })
 
-    } catch (error) {
-        logger.log('error', 'Download error:', error)
+    } catch (err) {
+        logger.log('error', 'Download error:', { err: err?.message })
         if (!res.headersSent) {
             res.status(500).send('Error downloading file')
         }

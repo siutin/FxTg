@@ -21,9 +21,13 @@ export default function (data) {
 }
 
 function renderSiteName(data) {
-    const siteName = data.serviceName == 'threads' ? 'FxThreads' : (
-        data.serviceName == 'instagram' ? 'FxInstagrams' : ''
-    )
+    const siteName = (() => {
+        switch (data.serviceName) {
+            case 'threads': return 'FxThreads'
+            case 'instagram': return 'FxInstagrams'
+            default: throw new Error(`service '${data.serviceName}' is not supported yet`)
+        }
+    })()
     return {
         metaArray: [`<meta property="og:site_name" content="${siteName}"/>`]
     }
@@ -47,7 +51,6 @@ function renderStatus(data) {
         arr.push(`${data.shareCount}`)
     }
     return `<p>${arr.join(' ')}<p>`
-    // return `<p>${data.likeCount} ❤️ ${data.replyCount} 💬 ${data.repostCount} 🔁 ${data.shareCount}</p>`
 }
 
 function getThumbnailUrl(data, index) {
