@@ -4,24 +4,16 @@ import threads from './parsers/threads.js'
 import instagram from './parsers/instagram.js'
 
 export class Parser {
-    constructor() {
+    constructor({ browserOptions = {} } = {}) {
         this.browser = null
+        this.browserOptions = browserOptions
     }
 
     async start() {
         if (this.browser) return
         logger.log('debug', `[${this.constructor.name}] Starting browser...`)
-        this.browser = await puppeteer.launch({
-            headless: "new",
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu',
-                '--window-size=430x932'
-            ]
-        })
+        logger.log('debug', `[${this.constructor.name}]`, { browserOptions: this.browserOptions })
+        this.browser = await puppeteer.launch(this.browserOptions)
         logger.log('debug', `[${this.constructor.name}] Browser started`)
     }
 
