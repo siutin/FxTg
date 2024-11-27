@@ -241,6 +241,7 @@ app.get('/:username/post/:postId', async (req, res) => {
         const mediaIndex = (imgIndex < 1 || imgIndex > images.length) ? null : imgIndex - 1
 
         let renderData = {
+            serviceName: 'threads',
             url: threadsUrl,
             mosaicUrl: `${baseUrl}/mosaic/${username}/post/${postId}`,
             mediaIndex,
@@ -270,6 +271,75 @@ app.get('/:username/post/:postId', async (req, res) => {
         })
 
         cache.add(`${username}|${postId}`, images.map(o => o.url))
+
+        const html = render(renderData)
+        res.send(html)
+    } catch (error) {
+        logger.log('error', 'Error:', error)
+        res.status(500).send('Error fetching thread')
+    }
+})
+
+app.get('/:type(p|reel)/:postId', async (req, res) => {
+    try {
+
+        const { type, postId } = req.params
+        const postUrl = `https://www.instagram.com/${type}/${postId}`
+        const imgIndex = /^\d+$/.test(req.query.img_index) ? parseInt(req.query.img_index) : null
+
+        const userAgent = req.headers['user-agent']
+        logger.log('debug', `User Agent: ${userAgent}`)
+
+        if (!userAgent.includes('Telegram')) {
+            return res.status(301).redirect(postUrl)
+        }
+
+        const data = await parser.parse(postUrl)
+        logger.log('debug', 'parsed data:', { data })
+
+        // eslint-disable-next-line no-unused-vars
+        const { requestUrl, description, media, authorName, userName, profileImageURL, createdAt, status } = data
+
+        const images = media.filter(o => o.type === 'photo' || o.type === 'thumbnail')
+        logger.log('debug', 'images:', { images })
+
+        const videos = media.filter(o => o.type === 'video')
+        logger.log('debug', 'videos:', { videos })
+
+        // validate imgIndex
+        const mediaIndex = (imgIndex < 1 || imgIndex > images.length) ? null : imgIndex - 1
+
+        let renderData = {
+            serviceName: 'instagram',
+            url: postUrl,
+            mosaicUrl: `${baseUrl}/mosaic/${userName}/post/${postId}`,
+            mediaIndex,
+            authorName,
+            username: userName,
+            description: (description?.trim()?.length > 0 ? description : images.filter(o => o.type === 'photo')[0]?.alt) || "",
+            createdAt,
+            profileImageURL,
+            images,
+            videos: [],
+            hasImage: images.filter(o => o.type === 'photo').length > 0,
+            hasVideo: videos.length > 0,
+            status: status || {}
+        }
+
+        videos.forEach((video, index) => {
+            let newParams = encodeVideoURL2Params(video.url)
+            newParams.append("___t", generateRandomIdentifier())
+            const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
+            logger.log('debug', `[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}`)
+            renderData.videos.push({
+                url: videoEncodedUrl,
+                format: 'mp4',
+                width: 320,
+                height: 320
+            })
+        })
+
+        cache.add(`${userName}|${postId}`, images.map(o => o.url))
 
         const html = render(renderData)
         res.send(html)

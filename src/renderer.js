@@ -1,10 +1,6 @@
 export default function (data) {
-    const elements = [
-        {
-            metaArray: [`<meta property="og:site_name" content="FxThreads"/>`]
-        }
-    ]
-
+    const elements = []
+    elements.push(renderSiteName(data))
     const isFirstImageThumbnail = data.images[data.mediaIndex ?? 0]?.type === 'thumbnail'
     if (isFirstImageThumbnail) {
         elements.push(renderVideo(data))
@@ -24,8 +20,34 @@ export default function (data) {
     return `<html><head>${meta}</head><body>${body}</body></html>`
 }
 
+function renderSiteName(data) {
+    const siteName = data.serviceName == 'threads' ? 'FxThreads' : (
+        data.serviceName == 'instagram' ? 'FxInstagrams' : ''
+    )
+    return {
+        metaArray: [`<meta property="og:site_name" content="${siteName}"/>`]
+    }
+}
+
 function renderStatus(data) {
-    return `<p>${data.likeCount} ❤️ ${data.replyCount} 💬 ${data.repostCount} 🔁 ${data.shareCount}</p>`
+    let arr = []
+    if (data.videoPlays !== undefined) {
+        arr.push(`${data.videoPlays} ▶️`)
+    }
+    if (data.likeCount !== undefined) {
+        arr.push(`${data.likeCount} ❤️`)
+    }
+    if (data.replyCount !== undefined) {
+        arr.push(`${data.replyCount} 💬`)
+    }
+    if (data.repostCount !== undefined) {
+        arr.push(`${data.repostCount} 🔁`)
+    }
+    if (data.shareCount !== undefined) {
+        arr.push(`${data.shareCount}`)
+    }
+    return `<p>${arr.join(' ')}<p>`
+    // return `<p>${data.likeCount} ❤️ ${data.replyCount} 💬 ${data.repostCount} 🔁 ${data.shareCount}</p>`
 }
 
 function getThumbnailUrl(data, index) {
@@ -62,7 +84,7 @@ function renderInstantView(data) {
                 <p>${data.description}</p>
                 ${generateMediaTag(data)}
                 ${renderStatus(data.status)}
-                
+
                 <h2>About author</h2>
                 <img src="${data.profileImageURL}" alt="${data.username}'s profile picture" />
                 <h2>${data.authorName}</h2>
@@ -98,7 +120,7 @@ function renderVideo(data) {
     let videoIndex = data.images.slice(0, mediaIndex).reduce((count, image) => {
         return count + (image.type === 'thumbnail' ? 1 : 0)
     }, 0)
-    
+
     return {
         metaArray: [
             `<meta property="twitter:player" content="${data.videos[videoIndex].url}">`,
