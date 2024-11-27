@@ -70,6 +70,14 @@ function renderInstantView(data) {
         return elements.join('')
     }
 
+    const host = (() => {
+        switch (data.serviceName) {
+            case 'threads': return 'https://www.threads.net/'
+            case 'instagram': return 'https://www.instagram.com/'
+            default: throw new Error(`service '${data.serviceName}' is not supported yet`)
+        }
+    })()
+
     return {
         metaArray: [
             `<meta property="al:android:app_name" content="Medium"/>`,
@@ -88,7 +96,7 @@ function renderInstantView(data) {
                 <h2>About author</h2>
                 <img src="${data.profileImageURL}" alt="${data.username}'s profile picture" />
                 <h2>${data.authorName}</h2>
-                <p><a href="https://www.threads.net/${data.username}">${data.username}</a></p>
+                <p><a href="${host}${data.username}">${data.username}</a></p>
             </article>`
         ]
     }
