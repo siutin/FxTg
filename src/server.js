@@ -102,8 +102,8 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
         const buffer = canvas.toBuffer('image/png')
         res.send(buffer)
 
-    } catch (err) {
-        logger.log('error', 'Error creating mosaic:', err)
+    } catch (error) {
+        logger.log('error', `Error creating mosaic: ${error}`, { stack: error?.stack })
         res.status(500).send('Error creating mosaic')
     }
 })
@@ -190,15 +190,15 @@ app.get('/media_download', async (req, res) => {
         }
 
         // Handle streaming errors
-        res.on('error', (err) => {
-            logger.log('error', 'Stream error:', err?.message)
+        res.on('error', (error) => {
+            logger.log('error', `Media streaming error: ${error} `, { stack: error?.stack })
             if (!res.headersSent) {
                 res.status(500).send('Error streaming file')
             }
         })
 
-    } catch (err) {
-        logger.log('error', 'Download error:', { err: err?.message })
+    } catch (error) {
+        logger.log('error', `Media download error: ${error}`, { stack: error?.stack })
         if (!res.headersSent) {
             res.status(500).send('Error downloading file')
         }
@@ -268,7 +268,7 @@ app.get('/:username/post/:postId', async (req, res) => {
         const html = render(renderData)
         res.send(html)
     } catch (error) {
-        logger.log('error', 'Error:', error)
+        logger.log('error', `[threads] ${error}`, { stack: error?.stack })
         res.status(500).send('Error fetching thread')
     }
 })
@@ -337,7 +337,7 @@ app.get('/:type(p|reel)/:postId', async (req, res) => {
         const html = render(renderData)
         res.send(html)
     } catch (error) {
-        logger.log('error', 'Error:', error)
+      logger.log('error', `[instagram] ${error}`, { stack: error?.stack })
         res.status(500).send('Error fetching thread')
     }
 })

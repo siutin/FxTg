@@ -12,7 +12,7 @@ const logFormat = winston.format.printf(({ timestamp, level, message, duration =
         : `${duration.toFixed(0)}ms`
 
     if (meta?.stack) {
-        return `${timestamp} [${level}]: ${meta?.stack} (Duration: ${durationDisplay})`
+        return `${timestamp} [${level}]: ${message} (Duration: ${durationDisplay})\n${meta?.stack}`
     }
 
     const metaFormatter = (obj) => {

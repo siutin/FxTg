@@ -54,8 +54,8 @@ export class Parser {
                 if (!evaluatedResult) throw new Error('failed to evaluate page')
                 return threads.callback(evaluatedResult)
             }
-        } catch (ex) {
-            logger.log('error', ex)
+        } catch (error) {
+            logger.log('error', error, { stack: error?.stack })
         } finally {
             await page.close()
             logger.log('debug', `[${this.constructor.name}] Page closed`)
