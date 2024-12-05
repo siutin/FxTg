@@ -205,10 +205,10 @@ app.get('/media_download', async (req, res) => {
     }
 })
 
-app.get('/:username/post/:postId', async (req, res) => {
+async function threadsHandler(req, res) {
     try {
         const { username, postId } = req.params
-        const threadsUrl = `https://www.threads.net/${username}/post/${postId}`
+        const threadsUrl = username ? `https://www.threads.net/${username}/post/${postId}` : `https://www.threads.net/post/${postId}`
         const imgIndex = /^\d+$/.test(req.query.img_index) ? parseInt(req.query.img_index) : null
 
         const userAgent = req.headers['user-agent']
@@ -222,7 +222,7 @@ app.get('/:username/post/:postId', async (req, res) => {
         logger.log('debug', 'parsed data:', { data })
 
         // eslint-disable-next-line no-unused-vars
-        const { requestUrl, description, media, authorName, profileImageURL, createdAt, status } = data
+        const { requestUrl, description, media, authorName, userName, profileImageURL, createdAt, status } = data
 
         const images = media.filter(o => o.type === 'photo' || o.type === 'thumbnail')
         logger.log('debug', 'images:', { images })
@@ -239,7 +239,7 @@ app.get('/:username/post/:postId', async (req, res) => {
             mosaicUrl: `${baseUrl}/mosaic/${username}/post/${postId}`,
             mediaIndex,
             authorName,
-            username,
+            username: username || userName,
             description: (description?.trim()?.length > 0 ? description : images.filter(o => o.type === 'photo')[0]?.alt) || "",
             createdAt,
             profileImageURL,
@@ -271,13 +271,13 @@ app.get('/:username/post/:postId', async (req, res) => {
         logger.log('error', `[threads] ${error}`, { stack: error?.stack })
         res.status(500).send('Error fetching thread')
     }
-})
+}
 
-app.get('/:type(p|reel)/:postId', async (req, res) => {
+async function instagramHandler(req, res) {
     try {
 
-        const { type, postId } = req.params
-        const postUrl = `https://www.instagram.com/${type}/${postId}`
+        const { username, type, postId } = req.params
+        const postUrl = username ? `https://www.instagram.com/${username}/${type}/${postId}` : `https://www.instagram.com/${type}/${postId}`
         const imgIndex = /^\d+$/.test(req.query.img_index) ? parseInt(req.query.img_index) : null
 
         const userAgent = req.headers['user-agent']
@@ -308,7 +308,7 @@ app.get('/:type(p|reel)/:postId', async (req, res) => {
             mosaicUrl: `${baseUrl}/mosaic/${userName}/post/${postId}`,
             mediaIndex,
             authorName,
-            username: userName,
+            username: username || userName,
             description: (description?.trim()?.length > 0 ? description : images.filter(o => o.type === 'photo')[0]?.alt) || "",
             createdAt,
             profileImageURL,
@@ -337,10 +337,16 @@ app.get('/:type(p|reel)/:postId', async (req, res) => {
         const html = render(renderData)
         res.send(html)
     } catch (error) {
-      logger.log('error', `[instagram] ${error}`, { stack: error?.stack })
+        logger.log('error', `[instagram] ${error}`, { stack: error?.stack })
         res.status(500).send('Error fetching thread')
     }
-})
+}
+
+app.get('/threads/:username/post/:postId', threadsHandler)
+app.get('/threads/post/:postId', threadsHandler)
+
+app.get('/instagram/:username/:type(p|reel)/:postId', instagramHandler)
+app.get('/instagram/:type(p|reel)/:postId', instagramHandler)
 
 // Start the server
 app.listen(port, () => {
