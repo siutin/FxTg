@@ -1,3 +1,4 @@
+const packageName = process.env.PACKAGE_NAME || 'FxTG'
 const logLevel = process.env.LOG_LEVEL || 'http'
 const port = process.env.PORT || 3000
 const baseUrl = process.env.BASE_URL || `http://localhost:${port}`
@@ -10,6 +11,7 @@ const whitelistVideoHosts = [
 const whitelistVideoHostRegex = new RegExp(`^(${whitelistVideoHosts.join('|')})$`)
 
 export {
+    packageName,
     logLevel,
     port,
     baseUrl,

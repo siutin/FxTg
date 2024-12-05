@@ -1,3 +1,5 @@
+import { packageName } from "./config.js"
+
 export default function (data) {
     const elements = []
     elements.push(renderSiteName(data))
@@ -23,8 +25,8 @@ export default function (data) {
 function renderSiteName(data) {
     const siteName = (() => {
         switch (data.serviceName) {
-            case 'threads': return 'FxThreads'
-            case 'instagram': return 'FxInstagrams'
+            case 'threads': return `Threads • ${packageName}`
+            case 'instagram': return `Instagram • ${packageName}`
             default: throw new Error(`service '${data.serviceName}' is not supported yet`)
         }
     })()
@@ -106,10 +108,17 @@ function renderInstantView(data) {
 }
 
 function renderText(data) {
+    const title = (() => {
+        switch (data.serviceName) {
+            case 'threads': return `${data.authorName} (${data.username})`
+            case 'instagram': return `${data.authorName} (@${data.username})`
+            default: throw new Error(`service '${data.serviceName}' is not supported yet`)
+        }
+    })()
     return {
         metaArray: [
             `<meta property="og:url" content="${data.url}"/>`,
-            `<meta property="og:title" content="Thread from ${data.username}"/>`,
+            `<meta property="og:title" content="${title}"/>`,
             `<meta name="twitter:description" content="${data.description}">`
         ]
     }
