@@ -13,14 +13,14 @@ async function evaluate(page) {
             function getImages(post, isReel) {
                 const sidecarChildren = post?.sidecarChildren || []
                 const isVideo = post?.isVideo
-                if (isReel | isVideo) {
+                if (isReel | isVideo | sidecarChildren.length == 0) {
                     return [
                         {
                             src: post?.src,
                             alt: post?.accessibilityCaption || "",
                             width: post?.dimensions?.width,
                             height: post?.dimensions?.height,
-                            type: 'thumbnail'
+                            type: isVideo ? 'thumbnail' : 'photo'
                         }
                     ]
                 }
