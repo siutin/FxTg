@@ -35,19 +35,19 @@ function renderSiteName(data) {
 
 function renderStatus(data) {
     let arr = []
-    if (data.videoPlays !== undefined) {
+    if (data.videoPlays !== undefined && data.videoPlays >= 0) {
         arr.push(`${data.videoPlays} ▶️`)
     }
-    if (data.likeCount !== undefined) {
+    if (data.likeCount !== undefined && data.likeCount >= 0) {
         arr.push(`${data.likeCount} ❤️`)
     }
-    if (data.replyCount !== undefined) {
+    if (data.replyCount !== undefined && data.replyCount >= 0) {
         arr.push(`${data.replyCount} 💬`)
     }
-    if (data.repostCount !== undefined) {
+    if (data.repostCount !== undefined && data.repostCount >= 0) {
         arr.push(`${data.repostCount} 🔁`)
     }
-    if (data.shareCount !== undefined) {
+    if (data.shareCount !== undefined && data.shareCount >= 0) {
         arr.push(`${data.shareCount}`)
     }
     return `<p>${arr.join(' ')}<p>`
