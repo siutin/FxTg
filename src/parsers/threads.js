@@ -60,6 +60,18 @@ async function evaluate(page) {
                 return image ? image.src : null
             }
 
+            function getUserName(document) {
+                const head = document.querySelector("head")
+                if (head) {
+                    const content = head.querySelector("meta[property='og:title']")?.content
+                    if (content) {
+                        const matches = content.match(/\(([^)]+)\)/)
+                        return matches ? matches[1] : null
+                    }
+                    return null
+                }
+            }
+
             function getAuthorName(document) {
                 const head = document.querySelector("head")
                 if (head) {
@@ -106,6 +118,7 @@ async function evaluate(page) {
                 const description = getDescriptionText(div)
 
                 const authorName = getAuthorName(document)
+                const userName = getUserName(document)
                 const profileImageURL = getProfileImageURL(div)
                 const createdAt = getCreatedAt(div)
                 const status = getStatus(div)
@@ -114,6 +127,7 @@ async function evaluate(page) {
                     description,
                     images,
                     videos,
+                    userName,
                     authorName,
                     profileImageURL,
                     createdAt,
@@ -126,6 +140,7 @@ async function evaluate(page) {
                 description: null,
                 images: null,
                 videos: null,
+                userName: null,
                 authorName: null,
                 profileImageURL: null,
                 createdAt: null,
@@ -136,7 +151,7 @@ async function evaluate(page) {
 }
 
 function callback(evaluatedResult) {
-    const { errorMessage, description, images, videos, authorName, profileImageURL, createdAt, status } = evaluatedResult
+    const { errorMessage, description, images, videos, authorName, userName, profileImageURL, createdAt, status } = evaluatedResult
 
     if (errorMessage) throw new Error(errorMessage)
 
@@ -161,6 +176,7 @@ function callback(evaluatedResult) {
     const result = {
         requestUrl: '',
         description,
+        userName,
         authorName,
         profileImageURL,
         createdAt,
