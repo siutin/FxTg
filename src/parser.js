@@ -56,7 +56,7 @@ export class Parser {
             }
         } catch (error) {
             logger.log('error', error, { stack: error?.stack })
-            await page.screenshot({path: `../public/pics/${new Date().toISOString().replace(/[.-T:Z]/g,'')}.png`, fullPage: true})
+            await page.screenshot({path: `./public/pics/${new Date().toISOString().replace(/[\.\-T:Z]/g,'')}.png`, fullPage: true})
         } finally {
             await page.close()
             logger.log('debug', `[${this.constructor.name}] Page closed`)
