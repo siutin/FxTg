@@ -29,8 +29,6 @@ export class Parser {
         logger.log('debug', `[${this.constructor.name}] Parsing ${url}...`)
 
         const page = await this.browser.newPage()
-        const customUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/450.0.0.38.108;FBBV/564431005;FBDV/iPhone17,1;FBMD/iPhone;FBSN/iOS;FBSV/18.1;FBSS/3;FBID/phone;FBLC/en_GB;FBOP/5;FBRV/567052743]'
-        await page.setUserAgent(customUA)
         try {
 
             // Navigate to page
