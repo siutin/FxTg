@@ -20,14 +20,14 @@ async function evaluate(page) {
         try {
 
             function getDescriptionText(div) {
-                const h1 = div.querySelector('h1')
-                if (!h1) return null
-                h1.childNodes.forEach(child => {
+                const span = div.querySelector('div:nth-child(3)').querySelector('span')
+                if (!span) return null
+                span.childNodes.forEach(child => {
                     if (child.nodeType != 3) {
-                        h1.removeChild(child)
+                        span.removeChild(child)
                     }
                 })
-                return h1.innerText
+                return span.innerText
             }
 
             function getImages(div) {
