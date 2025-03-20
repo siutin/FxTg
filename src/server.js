@@ -6,9 +6,10 @@ import { logger } from './logger.js'
 import loader from './loader.js'
 import { Parser } from './parser.js'
 import render from './renderer.js'
-import { loadImage } from 'canvas'
+// import { loadImage } from 'canvas'
 import { Mosaic } from './mosaic.js'
 import { Cache } from './cache.js'
+import { loadImage } from './custom.js'
 
 const cache = new Cache(cacheFilePath)
 cache.autoCleanUp()
