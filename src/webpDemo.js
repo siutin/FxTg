@@ -3,7 +3,7 @@ import axios from 'axios'
 import { promises as fsPromises } from 'fs'
 import { loadImage } from 'canvas'
 import { Mosaic } from './mosaic.js'
-import { loadWebpImage } from './webp.js'
+import { loadWebpCanvas } from './webp.js'
 
 // function demo (fileUrl) {
 //   const source = fs.readFileSync(fileUrl)
@@ -49,11 +49,11 @@ async function demo2 () {
           axios.get(s, { responseType: 'arraybuffer' })
             .then(response => {
               const buffer = Buffer.from(response.data)
-              resolve(loadWebpImage(buffer))
+              resolve(loadWebpCanvas(buffer))
             })
             .catch(reject)
         } else {
-          resolve(loadWebpImage(s))
+          resolve(loadWebpCanvas(s))
         }
       } else {
         resolve(loadImage(s))
