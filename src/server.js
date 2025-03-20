@@ -348,6 +348,22 @@ app.get('/threads/post/:postId', threadsHandler)
 app.get('/instagram/:username/:type(p|reel)/:postId', instagramHandler)
 app.get('/instagram/:type(p|reel)/:postId', instagramHandler)
 
+app.get('/instagram/stories/:username/:postId', (req, res) => {
+    logger.log('info', `instagram stories. ${req.url}`)
+    const { username, postId } = req.params
+    const postUrl = `https://www.instagram.com/stories/${username}/${postId}`
+
+    const userAgent = req.headers['user-agent']
+    logger.log('debug', `User Agent: ${userAgent}`)
+
+    if (!userAgent.includes('Telegram')) {
+        return res.status(301).redirect(postUrl)
+    }
+
+    const hackUrl = `https://www.ddinstagram.com/stories/${username}/${postId}`
+    return res.status(301).redirect(hackUrl)
+})
+
 // Start the server
 app.listen(port, () => {
     logger.log('info', `Server running at http://localhost:${port}`)
