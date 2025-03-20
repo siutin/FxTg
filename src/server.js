@@ -364,6 +364,10 @@ app.get('/instagram/stories/:username/:postId', (req, res) => {
     return res.status(301).redirect(hackUrl)
 })
 
+app.get('*', (req, res) => {
+    res.status(404).send('not found')
+})
+
 // Start the server
 app.listen(port, () => {
     logger.log('info', `Server running at http://localhost:${port}`)
