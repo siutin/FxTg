@@ -23,11 +23,11 @@ async function evaluate(page) {
                 const span = div.querySelector('div:nth-child(3)').querySelector('span')
                 if (!span) return null
                 span.childNodes.forEach(child => {
-                    if (child.nodeType != 3) {
+                    if (child.innerText == 'Translate') {
                         span.removeChild(child)
                     }
                 })
-                return span.innerText
+                return span.innerText?.trim()
             }
 
             function getImages(div) {
