@@ -215,7 +215,7 @@ async function threadsHandler(req, res) {
         const userAgent = req.headers['user-agent']
         logger.log('debug', `User Agent: ${userAgent}`)
 
-        if (!userAgent.includes('Telegram')) {
+        if (!userAgent.includes('Telegram') && !userAgent.includes('Discordbot')) {
             return res.status(301).redirect(threadsUrl)
         }
 
@@ -284,7 +284,7 @@ async function instagramHandler(req, res) {
         const userAgent = req.headers['user-agent']
         logger.log('debug', `User Agent: ${userAgent}`)
 
-        if (!userAgent.includes('Telegram')) {
+        if (!userAgent.includes('Telegram') && !userAgent.includes('Discordbot')) {
             return res.status(301).redirect(postUrl)
         }
 
@@ -357,7 +357,7 @@ app.get('/instagram/stories/:username/:postId', (req, res) => {
     const userAgent = req.headers['user-agent']
     logger.log('debug', `User Agent: ${userAgent}`)
 
-    if (!userAgent.includes('Telegram')) {
+    if (!userAgent.includes('Telegram') && !userAgent.includes('Discordbot')) {
         return res.status(301).redirect(postUrl)
     }
 
