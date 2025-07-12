@@ -131,30 +131,113 @@ async function evaluate(page) {
                 }
 
                 const post = getPostFromReactProps(divs)
-                if (!post) {
-                    throw new Error("fail to extract post object")
+
+                if (post) {
+
+                    const images = getImages(post, isReel)
+                    const videos = getVideos(post, isReel)
+                    const description = getDescriptionText(post)
+
+                    const authorName = getAuthorName(post)
+                    const userName = getUserName(post)
+                    const profileImageURL = getProfileImageURL(post)
+                    const createdAt = getCreatedAt(post)
+                    const status = getStatus(post)
+
+                    return {
+                        description,
+                        images,
+                        videos,
+                        userName,
+                        authorName,
+                        profileImageURL,
+                        createdAt,
+                        status
+                    }
+
+                } else {
+
+                    // handle when 429 error 
+
+                    function getImages (article) {
+                        const imgs = article.querySelectorAll("div[role='presentation'] img")
+                        return Array.from(imgs).map(img => {
+                            return {
+                                src: img.src,
+                                alt: img.alt,
+                                width: img.width,
+                                height: img.height,
+                                type: 'photo'
+                            }
+                        })
+                    }
+
+                    function getProfileImageURL(article) {
+                        const header = article.querySelector("header")
+                        return header.querySelector("img")?.src
+                    }
+
+                    function getUserName(document) {
+                        const head = document.querySelector("head")
+                        if (head) {
+                            const content = head.querySelector("meta[name='twitter:title']")?.content
+                            if (content) {
+                                const s = content.split("•")[0].trim()
+                                const matches = s.match(/\(([^)]+)\)/)
+                                return matches ? matches[1] : null
+                            }
+                            return null
+                        }
+                    }
+
+                    function getAuthorName(document) {
+                        const head = document.querySelector("head")
+                        if (head) {
+                            const content = head.querySelector("meta[name='twitter:title']")?.content
+                            if (content) {
+                                const splits = content.split(" ")
+                                return splits.length > 0 ? splits[0] : null
+                            }
+                            return null
+                        }
+                    }
+
+                    function getDescription(document) {
+                        const head = document.querySelector("head")
+                        if (head) {
+                            const content = head.querySelector("meta[property='og:description']")?.content
+                            return content
+                        }
+                        return null
+                    }
+
+                    function getCreatedAt(article) {
+                        const time = article.querySelector("time")
+                        return time ? time.dateTime : null
+                    }
+
+                    const article = document.querySelector("main article")
+                    if (article) {
+                        const images = getImages(article)
+                        const profileImageURL = getProfileImageURL(article)
+                        const userName = getUserName(document)
+                        const authorName = getAuthorName(document)
+                        const description = getDescription(document)
+                        const createdAt = getCreatedAt(article)
+
+                        return {
+                            description,
+                            images,
+                            videos: [],
+                            profileImageURL,
+                            userName,
+                            authorName,
+                            createdAt,
+                            status: { likeCount: 0, replyCount: 0, videoViewCount: 0, viewPlayCount: 0 }
+                        }
+                    }
                 }
 
-                const images = getImages(post, isReel)
-                const videos = getVideos(post, isReel)
-                const description = getDescriptionText(post)
-
-                const authorName = getAuthorName(post)
-                const userName = getUserName(post)
-                const profileImageURL = getProfileImageURL(post)
-                const createdAt = getCreatedAt(post)
-                const status = getStatus(post)
-
-                return {
-                    description,
-                    images,
-                    videos,
-                    userName,
-                    authorName,
-                    profileImageURL,
-                    createdAt,
-                    status
-                }
             }
         } catch (ex) {
             return {
