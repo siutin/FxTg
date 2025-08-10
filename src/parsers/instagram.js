@@ -216,28 +216,24 @@ async function evaluate(page) {
                         return time ? time.dateTime : null
                     }
 
-                    const article = document.querySelector("main article")
-                    if (article) {
-                        const images = getImages(article)
-                        const profileImageURL = getProfileImageURL(article)
-                        const userName = getUserName(document)
-                        const authorName = getAuthorName(document)
-                        const description = getDescription(document)
-                        const createdAt = getCreatedAt(article)
+                    const images = getImages(main)
+                    const profileImageURL = getProfileImageURL(document)
+                    const userName = getUserName(document)
+                    const authorName = getAuthorName(document)
+                    const description = getDescription(document)
+                    const createdAt = getCreatedAt(main)
 
-                        return {
-                            description,
-                            images,
-                            videos: [],
-                            profileImageURL,
-                            userName,
-                            authorName,
-                            createdAt,
-                            status: { likeCount: 0, replyCount: 0, videoViewCount: 0, viewPlayCount: 0 }
-                        }
+                    return {
+                       description,
+                       images,
+                       videos: [],
+                       profileImageURL,
+                       userName,
+                       authorName,
+                       createdAt,
+                       status: { likeCount: 0, replyCount: 0, videoViewCount: 0, viewPlayCount: 0 }
                     }
                 }
-
             }
         } catch (ex) {
             return {
