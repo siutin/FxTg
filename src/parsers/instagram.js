@@ -182,9 +182,9 @@ async function evaluate(page) {
                         if (head) {
                             const content = head.querySelector("meta[name='twitter:title']")?.content
                             if (content) {
-                                const s = content.split("•")[0].trim()
+                                const s = content.substr(0, content.lastIndexOf('•') - 1)
                                 const matches = s.match(/\(([^)]+)\)/)
-                                return matches ? matches[1] : null
+                                return matches ? matches[1].replace("@", '') : null
                             }
                             return null
                         }
@@ -195,8 +195,9 @@ async function evaluate(page) {
                         if (head) {
                             const content = head.querySelector("meta[name='twitter:title']")?.content
                             if (content) {
-                                const splits = content.split(" ")
-                                return splits.length > 0 ? splits[0] : null
+                                const s = content.substr(0, content.lastIndexOf('•') - 1)
+                                const ss = `${s.substr(0, s.lastIndexOf("@")-2)}`.trim()
+                                if (ss.length > 0) return ss
                             }
                             return null
                         }
