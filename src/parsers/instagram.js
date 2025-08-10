@@ -238,6 +238,7 @@ async function evaluate(page) {
         } catch (ex) {
             return {
                 errorMessage: ex.message,
+                errorStack: ex.stack,
                 description: null,
                 images: null,
                 videos: null,
@@ -254,9 +255,9 @@ async function evaluate(page) {
 
 function callback(evaluatedResult) {
 
-    const { errorMessage, description, images, videos, userName, authorName, profileImageURL, createdAt, status } = evaluatedResult
+    const { errorMessage, errorStack, description, images, videos, userName, authorName, profileImageURL, createdAt, status } = evaluatedResult
 
-    if (errorMessage) throw new Error(errorMessage)
+    if (errorMessage) throw new Error(`${errorMessage}\n${errorStack}`)
 
     const media = []
     images.forEach(image => {
