@@ -224,6 +224,7 @@ async function evaluate(page) {
                     const createdAt = getCreatedAt(main)
 
                     return {
+                       html: document.innerHTML,
                        description,
                        images,
                        videos: [],

@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer'
 import { logger } from './logger.js'
 import threads from './parsers/threads.js'
 import instagram from './parsers/instagram.js'
+import fs from 'fs'
 
 export class Parser {
     constructor({ browserOptions = {} } = {}) {
@@ -45,6 +46,10 @@ export class Parser {
 
             if (url.startsWith('https://www.instagram.com')) {
                 const evaluatedResult = await instagram.evaluate(page)
+
+                const html = await page.content()
+                fs.writeFileSync(`./html/${new Date().toISOString().replace(/[\.\-T:Z]/g,'')}.html`, html)
+
                 if (!evaluatedResult) throw new Error('failed to evaluate page')
                 return instagram.callback(evaluatedResult)
             } else if (url.startsWith('https://www.threads.net')) {
