@@ -365,6 +365,22 @@ app.get('/instagram/stories/:username/:postId', (req, res) => {
     return res.status(301).redirect(hackUrl)
 })
 
+app.get('/threads/:username', (req, res) => {
+    logger.log('info', `threads profile. ${req.url}`)
+    const { username, postId } = req.params
+    const subPath = username?.startsWith("@") ? username : `@${username}`
+    const profileUrl = `https://www.threads.net/${subPath}`
+
+    return res.status(301).redirect(profileUrl)
+})
+app.get('/instagram/:username', (req, res) => {
+    logger.log('info', `instagram profile. ${req.url}`)
+    const { username, postId } = req.params
+    const profileUrl = `https://www.instagram.com/${username}`
+
+    return res.status(301).redirect(profileUrl)
+})
+
 app.get('*', (req, res) => {
     res.status(404).send('not found')
 })
