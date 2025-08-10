@@ -174,7 +174,7 @@ async function evaluate(page) {
 
                     function getProfileImageURL(article) {
                         const header = article.querySelector("header")
-                        return header.querySelector("img")?.src
+                        return header?.querySelector("img")?.src
                     }
 
                     function getUserName(document) {
