@@ -1,7 +1,7 @@
 import express from 'express'
 import axios from 'axios'
 import path from 'path'
-import { port, baseUrl, cacheFilePath, browserOptionsPath, whitelistVideoHostRegex } from './config.js'
+import { port, baseUrl, cacheFilePath, browserOptionsPath } from './config.js'
 import { logger } from './logger.js'
 import loader from './loader.js'
 import { Parser } from './parser.js'
@@ -46,30 +46,30 @@ app.use((req, res, next) => {
     next()
 })
 
-function encodeVideoURL2Params(value) {
-    const url = new URL(value)
-    let params = new URLSearchParams(url.search)
-    params.append("___host", url.host)
-    params.append("___pathname", url.pathname)
-    return params
-}
+// function encodeVideoURL2Params(value) {
+//     const url = new URL(value)
+//     let params = new URLSearchParams(url.search)
+//     params.append("___host", url.host)
+//     params.append("___pathname", url.pathname)
+//     return params
+// }
 
-function decodeVideoURL(value) {
-    const url = new URL(value)
-    const host = url.searchParams.get('___host')
-    const pathname = url.searchParams.get('___pathname')
-    let params = new URLSearchParams(url.searchParams)
-    params.delete('___host')
-    params.delete('___pathname')
-    params.delete('___t')
-    params.delete('0.mp4')
-    logger.log('debug', `host: ${host} pathname: ${pathname} params: ${params}`)
+// function decodeVideoURL(value) {
+//     const url = new URL(value)
+//     const host = url.searchParams.get('___host')
+//     const pathname = url.searchParams.get('___pathname')
+//     let params = new URLSearchParams(url.searchParams)
+//     params.delete('___host')
+//     params.delete('___pathname')
+//     params.delete('___t')
+//     params.delete('0.mp4')
+//     logger.log('debug', `host: ${host} pathname: ${pathname} params: ${params}`)
 
-    if (!host || !pathname || params.length === 0)
-        throw new Error('invalid url')
+//     if (!host || !pathname || params.length === 0)
+//         throw new Error('invalid url')
 
-    return { host, pathname, params }
-}
+//     return { host, pathname, params }
+// }
 
 function generateRandomIdentifier(digits = 6) {
     const random = Math.floor(Math.random() * 1000)
@@ -109,23 +109,30 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
     }
 })
 
-app.get('/media_download', async (req, res) => {
+app.get('/media_download/:username/:postId/:filename', async (req, res) => {
     try {
-        if (req.query.length === 0) {
+        // if (req.query.length === 0) {
+        //     res.status(404).send('File not found')
+        //     return
+        // }
+
+        // const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl
+        // logger.log('debug', `fullUrl: ${fullUrl}`)
+
+        // const { host, pathname, params } = decodeVideoURL(fullUrl)
+        // const fileUrl = `https://${host}${pathname}?${params.toString()}`
+        // logger.log('debug', `fileUrl: ${fileUrl}`)
+
+        // if (!whitelistVideoHostRegex.test(host)) {
+        //     logger.log('warn', `host '${host}' is not in whitelist. fullUrl: ${fullUrl}`)
+        //     res.status(400).send('bad request')
+        //     return
+        // }
+
+        const { username, postId, filename } = req.params
+        const fileUrl = cache.getValue(`${username}|${postId}|video|${filename}`)
+        if (!fileUrl) {
             res.status(404).send('File not found')
-            return
-        }
-
-        const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl
-        logger.log('debug', `fullUrl: ${fullUrl}`)
-
-        const { host, pathname, params } = decodeVideoURL(fullUrl)
-        const fileUrl = `https://${host}${pathname}?${params.toString()}`
-        logger.log('debug', `fileUrl: ${fileUrl}`)
-
-        if (!whitelistVideoHostRegex.test(host)) {
-            logger.log('warn', `host '${host}' is not in whitelist. fullUrl: ${fullUrl}`)
-            res.status(400).send('bad request')
             return
         }
 
@@ -251,17 +258,28 @@ async function threadsHandler(req, res) {
             status: status || {}
         }
 
-        videos.forEach((video, index) => {
-            let newParams = encodeVideoURL2Params(video.url)
-            newParams.append("___t", generateRandomIdentifier())
-            const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
-            logger.log('debug', `[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}`)
+        videos.forEach(video => {
+            // let newParams = encodeVideoURL2Params(video.url)
+            // newParams.append("___t", generateRandomIdentifier())
+            // const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
+            // logger.log('debug', `[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}`)
+            // renderData.videos.push({
+            //     url: videoEncodedUrl,
+            //     format: 'mp4',
+            //     width: 320,
+            //     height: 320
+            // })
+
+            const videoUrl = `${baseUrl}/media_download/${username}/${postId}/${video.filename}`
+            logger.log('debug', `videoUrl: ${videoUrl}`)
             renderData.videos.push({
-                url: videoEncodedUrl,
+                url: videoUrl,
                 format: 'mp4',
                 width: 320,
                 height: 320
             })
+
+            cache.add(`${username}|${postId}|video|${video.filename}`, video.url)
         })
 
         cache.add(`${username}|${postId}`, images.map(o => o.url))
@@ -320,17 +338,27 @@ async function instagramHandler(req, res) {
             status: status || {}
         }
 
-        videos.forEach((video, index) => {
-            let newParams = encodeVideoURL2Params(video.url)
-            newParams.append("___t", generateRandomIdentifier())
-            const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
-            logger.log('debug', `[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}`)
+        videos.forEach(video => {
+            // let newParams = encodeVideoURL2Params(video.url)
+            // newParams.append("___t", generateRandomIdentifier())
+            // const videoEncodedUrl = `${baseUrl}/media_download?${newParams.toString()}&0.mp4`
+            // logger.log('debug', `[${index + 1}] videoEncodedUrl: ${videoEncodedUrl}`)
+            // renderData.videos.push({
+            //     url: videoEncodedUrl,
+            //     format: 'mp4',
+            //     width: 320,
+            //     height: 320
+            // })
+            const videoUrl = `${baseUrl}/media_download/${userName}/${postId}/${video.filename}`
+            logger.log('debug', `videoUrl: ${videoUrl}`)
             renderData.videos.push({
-                url: videoEncodedUrl,
+                url: videoUrl,
                 format: 'mp4',
                 width: 320,
                 height: 320
             })
+
+            cache.add(`${userName}|${postId}|video|${video.filename}`, video.url)
         })
 
         cache.add(`${userName}|${postId}`, images.map(o => o.url))
@@ -367,7 +395,7 @@ app.get('/instagram/stories/:username/:postId', (req, res) => {
 
 app.get('/threads/:username', (req, res) => {
     logger.log('info', `threads profile. ${req.url}`)
-    const { username, postId } = req.params
+    const { username } = req.params
     const subPath = username?.startsWith("@") ? username : `@${username}`
     const profileUrl = `https://www.threads.net/${subPath}`
 
@@ -375,7 +403,7 @@ app.get('/threads/:username', (req, res) => {
 })
 app.get('/instagram/:username', (req, res) => {
     logger.log('info', `instagram profile. ${req.url}`)
-    const { username, postId } = req.params
+    const { username } = req.params
     const profileUrl = `https://www.instagram.com/${username}`
 
     return res.status(301).redirect(profileUrl)
