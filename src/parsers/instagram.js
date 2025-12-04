@@ -49,105 +49,144 @@ async function evaluate(page) {
                 return webInfo?.["items"]?.[0]?.['user']?.['profile_pic_url']
             }
 
-            let ssImages = []
-            let ssProfileImageURL = null
+            function getUserNameFromWebInfo(webInfo) {
+                return webInfo?.["items"]?.[0]?.['user']?.['username']
+            }
+
+            function getDescriptionFromWebInfo(webInfo) {
+                return webInfo?.["items"]?.[0]?.['caption']?.['text']
+            }
+
+            function getStatusFromWebInfo(webInfo) {
+                const likeCount = webInfo?.["items"]?.[0]?.['like_count']
+                const commentCount = webInfo?.["items"]?.[0]?.['comment_count']
+                const viewCount = webInfo?.["items"]?.[0]?.['view_count']
+                return {
+                    likeCount: likeCount || 0,
+                    replyCount: commentCount || 0,
+                    viewCount: viewCount || 0
+                }
+            }
+
+            function getCreatedAtFromWebInfo(webInfo) {
+                const takenAt = webInfo?.["items"]?.[0]?.['taken_at']
+                const createdAt = new Date(takenAt).toISOString()
+                return createdAt
+            }
+
             if (targetScript) {
+
                 const webInfo = getWebInfoFromScheduledServerJS(JSON.parse(targetScript))
                 const parsedImages = getImagesFromWebInfo(webInfo)
-                parsedImages.forEach(item => {
-                    ssImages.push({
-                        src: item.image.url,
-                        alt: item.image.alt,
-                        width: item.image.width,
-                        height: item.image.height,
-                        type: 'photo',
-                        filename: item.image.filename
-                    })
-                })
-                ssProfileImageURL = getProfileImageURLFromWebInfo(webInfo)
-            }
 
-            const isReel = new URL(document.location.href).pathname.indexOf('/reel/') > 0
-            const main = document.querySelector('main')
-            // main.querySelector('[role="presentation"]')
-            if (main) {
+                const ssImages = parsedImages.map(item => ({
+                    src: item.image.url,
+                    alt: item.image.alt,
+                    width: item.image.width,
+                    height: item.image.height,
+                    type: 'photo',
+                    filename: item.image.filename
+                }))
 
-                function getImages(article) {
-                    const imgs = article.querySelectorAll("div[role='presentation'] img")
-                    return Array.from(imgs).map(img => {
-                        return {
-                            src: img.src,
-                            alt: img.alt,
-                            width: img.width,
-                            height: img.height,
-                            type: 'photo'
-                        }
-                    })
-                }
-
-                function getProfileImageURL(article) {
-                    const header = article.querySelector("header")
-                    return header?.querySelector("img")?.src
-                }
-
-                function getUserName(document) {
-                    const head = document.querySelector("head")
-                    if (head) {
-                        const content = head.querySelector("meta[name='twitter:title']")?.content
-                        if (content) {
-                            const s = content.substr(0, content.lastIndexOf('•') - 1)
-                            const matches = s.match(/\(([^)]+)\)/)
-                            return matches ? matches[1].replace("@", '') : null
-                        }
-                        return null
-                    }
-                }
-
-                function getAuthorName(document) {
-                    const head = document.querySelector("head")
-                    if (head) {
-                        const content = head.querySelector("meta[name='twitter:title']")?.content
-                        if (content) {
-                            const s = content.substr(0, content.lastIndexOf('•') - 1)
-                            const ss = `${s.substr(0, s.lastIndexOf("@") - 2)}`.trim()
-                            if (ss.length > 0) return ss
-                        }
-                        return null
-                    }
-                }
-
-                function getDescription(document) {
-                    const head = document.querySelector("head")
-                    if (head) {
-                        const content = head.querySelector("meta[property='og:description']")?.content
-                        return content
-                    }
-                    return null
-                }
-
-                function getCreatedAt(article) {
-                    const time = article.querySelector("time")
-                    return time ? time.dateTime : null
-                }
-
-                const images = getImages(main)
-                const profileImageURL = getProfileImageURL(document)
-                const userName = getUserName(document)
-                const authorName = getAuthorName(document)
-                const description = getDescription(document)
-                const createdAt = getCreatedAt(main)
-
+                const ssProfileImageURL = getProfileImageURLFromWebInfo(webInfo)
+                const ssUserName = getUserNameFromWebInfo(webInfo)
+                const ssDescription = getDescriptionFromWebInfo(webInfo)
+                const ssCreatedAt = getCreatedAtFromWebInfo(webInfo)
+                const ssStatus = getStatusFromWebInfo(webInfo)
                 return {
-                    description,
-                    images: ssImages.length > 0 ? ssImages : images,
+                    description: ssDescription,
+                    images: ssImages,
                     videos: [],
-                    profileImageURL: ssProfileImageURL || profileImageURL || '',
-                    userName,
-                    authorName,
-                    createdAt,
-                    status: { likeCount: 0, replyCount: 0, videoViewCount: 0, viewPlayCount: 0 }
+                    profileImageURL: ssProfileImageURL || '',
+                    userName: ssUserName,
+                    authorName: ssUserName,
+                    createdAt: ssCreatedAt,
+                    status: ssStatus
+                }
+            } else {
+                const isReel = new URL(document.location.href).pathname.indexOf('/reel/') > 0
+                const main = document.querySelector('main')
+
+                if (main) {
+
+                    function getImages(article) {
+                        const imgs = article.querySelectorAll("div[role='presentation'] img")
+                        return Array.from(imgs).map(img => {
+                            return {
+                                src: img.src,
+                                alt: img.alt,
+                                width: img.width,
+                                height: img.height,
+                                type: 'photo'
+                            }
+                        })
+                    }
+
+                    function getProfileImageURL(article) {
+                        const header = article.querySelector("header")
+                        return header?.querySelector("img")?.src
+                    }
+
+                    function getUserName(document) {
+                        const head = document.querySelector("head")
+                        if (head) {
+                            const content = head.querySelector("meta[name='twitter:title']")?.content
+                            if (content) {
+                                const s = content.substr(0, content.lastIndexOf('•') - 1)
+                                const matches = s.match(/\(([^)]+)\)/)
+                                return matches ? matches[1].replace("@", '') : null
+                            }
+                            return null
+                        }
+                    }
+
+                    function getAuthorName(document) {
+                        const head = document.querySelector("head")
+                        if (head) {
+                            const content = head.querySelector("meta[name='twitter:title']")?.content
+                            if (content) {
+                                const s = content.substr(0, content.lastIndexOf('•') - 1)
+                                const ss = `${s.substr(0, s.lastIndexOf("@") - 2)}`.trim()
+                                if (ss.length > 0) return ss
+                            }
+                            return null
+                        }
+                    }
+
+                    function getDescription(document) {
+                        const head = document.querySelector("head")
+                        if (head) {
+                            const content = head.querySelector("meta[property='og:description']")?.content
+                            return content
+                        }
+                        return null
+                    }
+
+                    function getCreatedAt(article) {
+                        const time = article.querySelector("time")
+                        return time ? time.dateTime : null
+                    }
+
+                    const images = getImages(main)
+                    const profileImageURL = getProfileImageURL(document)
+                    const userName = getUserName(document)
+                    const authorName = getAuthorName(document)
+                    const description = getDescription(document)
+                    const createdAt = getCreatedAt(main)
+
+                    return {
+                        description,
+                        images,
+                        videos: [],
+                        profileImageURL: profileImageURL || '',
+                        userName,
+                        authorName,
+                        createdAt,
+                        status: { likeCount: 0, replyCount: 0, videoViewCount: 0, viewPlayCount: 0 }
+                    }
                 }
             }
+
         } catch (ex) {
             return {
                 errorMessage: ex.message,
