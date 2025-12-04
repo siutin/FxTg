@@ -1,3 +1,16 @@
+import crypto from 'crypto'
+import path from 'path'
+
+function cleanURL(url) {
+    return url.replace(/\?(.+)/, '')
+}
+
+function generateFilename(url) {
+    const extension = path.extname(cleanURL(url))
+    const hash = crypto.createHash('md5').update(url).digest('hex').slice(0, 8)
+    return `${Date.now()}-${hash}${extension}`
+}
+
 async function evaluate(page) {
     await page.waitForSelector('main')
     await page.waitForSelector('main [role="presentation"]')
@@ -38,7 +51,7 @@ async function evaluate(page) {
                         // id: o.id,
                         src: largestImage.url,
                         alt: o.accessibility_caption || null,
-                        filename: getFileNameFromUrl(largestImage.url),
+                        // filename: getFileNameFromUrl(largestImage.url),
                         height: largestImage.height,
                         width: largestImage.width,
                         type: isVideo ? 'thumbnail' : 'photo'
@@ -52,7 +65,7 @@ async function evaluate(page) {
                             // pk: o.pk,
                             // id: o.id,
                             src: video.url,
-                            filename: getFileNameFromUrl(video.url),
+                            // filename: getFileNameFromUrl(video.url),
                             height: video.height,
                             width: video.width,
                             type: 'video'
@@ -225,6 +238,7 @@ function callback(evaluatedResult) {
     images.forEach(image => {
         media.push({
             alt: image.alt,
+            filename: generateFilename(image.src),
             url: image.src,
             type: image.type
         })
@@ -232,6 +246,7 @@ function callback(evaluatedResult) {
 
     videos.forEach(video => {
         media.push({
+            filename: generateFilename(video.src),
             url: video.src,
             type: 'video'
         })
