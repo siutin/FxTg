@@ -5,6 +5,7 @@ import { promises as fsPromises } from 'fs'
 import { loadImage } from 'canvas'
 import { Mosaic } from './mosaic.js'
 import { loadWebpCanvas } from './webp.js'
+import { getImagesFromScheduledServerJS } from './parsers/scheduledServerJS.js'
 
 // import { createCanvas } from 'canvas'
 // import webp from '@cwasm/webp'
@@ -72,39 +73,10 @@ export async function webpDemo2() {
   await fsPromises.writeFile("./result.png", canvas.toBuffer())
 }
 
-async function parseScheduleServerJS(script) {
-
-  function getFileNameFromUrl(url) {
-    const urlPath = new URL(url).pathname
-    return path.basename(urlPath).toLowerCase()
-  }
-
-  const relayPrefetchedStreamCache = script?.["require"]?.[0]?.[3]?.[0]?.["__bbox"]?.["require"]?.[0]
-  const rolarisPostRootQueryRelayPreloader__result__data = relayPrefetchedStreamCache?.[3]?.[1]?.["__bbox"]?.["result"]?.["data"]
-  const xdtApiV1MediaShortcodeWebInfo = rolarisPostRootQueryRelayPreloader__result__data?.["xdt_api__v1__media__shortcode__web_info"]
-  const carousel_media = xdtApiV1MediaShortcodeWebInfo?.["items"]?.[0]?.["carousel_media"]
-  const parsed = carousel_media.map(o => {
-    const images = o["image_versions2"]["candidates"]
-    const largestImage = images.sort((a, b) => b.height - a.height)[0]
-    return {
-      code: o.code,
-      pk: o.pk,
-      id: o.id,
-      image: {
-        url: largestImage.url,
-        filename: getFileNameFromUrl(largestImage.url),
-        height: largestImage.height,
-        width: largestImage.width
-      }
-    }
-  })
-  return parsed
-}
-
 export async function loadScheduledServerJSDemo(filePath) {
   const file = await fsPromises.readFile(filePath, { encoding: 'utf8', flag: 'r' })
   const script = JSON.parse(file)
-  const parsed = await parseScheduleServerJS(script)
+  const parsed = getImagesFromScheduledServerJS(script)
   console.dir(parsed, { depth: null })
   return parsed
 }
@@ -115,7 +87,7 @@ export async function saveScheduledServerJSDemo(filePath) {
 
   const file = await fsPromises.readFile(filePath, { encoding: 'utf8', flag: 'r' })
   const script = JSON.parse(file)
-  const parsed = await parseScheduleServerJS(script)
+  const parsed = getImagesFromScheduledServerJS(script)
   console.log(`parsed: ${parsed.length}`)
 
   const outputsFolder = path.join(process.cwd(), 'outputs')
@@ -141,6 +113,6 @@ export async function saveScheduledServerJSDemo(filePath) {
 //   console.log('saveScheduledServerJSDemo done')
 // })
 
-// loadScheduledServerJSDemo('scheduledServerJSScripts/demo1.json').then(async (parsed) => {
-//   console.dir(parsed, { depth: null })
-// })
+loadScheduledServerJSDemo('scheduledServerJSScripts/demo1.json').then(async (parsed) => {
+  console.dir(parsed, { depth: null })
+})
