@@ -24,22 +24,39 @@ async function evaluate(page) {
                 return xdtApiV1MediaShortcodeWebInfo
             }
 
-            function getImagesFromWebInfo(webInfo) {
+            function getMediaFromWebInfo(webInfo) {
                 const carousel_media = webInfo?.["items"]?.[0]?.["carousel_media"]
-                const parsed = carousel_media.map(o => {
+                const parsed = []
+                carousel_media.forEach(o => {
                     const images = o["image_versions2"]["candidates"]
                     const largestImage = images.sort((a, b) => b.height - a.height)[0]
-                    return {
-                        code: o.code,
-                        pk: o.pk,
-                        id: o.id,
-                        image: {
-                            alt: o.accessibility_caption || null,
-                            url: largestImage.url,
-                            filename: getFileNameFromUrl(largestImage.url),
-                            height: largestImage.height,
-                            width: largestImage.width
-                        },
+                    const media_type = o["media_type"]
+                    const isVideo = media_type === 2
+                    parsed.push({
+                        // code: o.code,
+                        // pk: o.pk,
+                        // id: o.id,
+                        src: largestImage.url,
+                        alt: o.accessibility_caption || null,
+                        filename: getFileNameFromUrl(largestImage.url),
+                        height: largestImage.height,
+                        width: largestImage.width,
+                        type: isVideo ? 'thumbnail' : 'photo'
+                    })
+
+                    if (isVideo) {
+                        const video_versions = o["video_versions"]
+                        const video = video_versions[0]
+                        parsed.push({
+                            // code: o.code,
+                            // pk: o.pk,
+                            // id: o.id,
+                            src: video.url,
+                            filename: getFileNameFromUrl(video.url),
+                            height: video.height,
+                            width: video.width,
+                            type: 'video'
+                        })
                     }
                 })
                 return parsed
@@ -77,17 +94,10 @@ async function evaluate(page) {
             if (targetScript) {
 
                 const webInfo = getWebInfoFromScheduledServerJS(JSON.parse(targetScript))
-                const parsedImages = getImagesFromWebInfo(webInfo)
+                const parsedMedia = getMediaFromWebInfo(webInfo)
 
-                const ssImages = parsedImages.map(item => ({
-                    src: item.image.url,
-                    alt: item.image.alt,
-                    width: item.image.width,
-                    height: item.image.height,
-                    type: 'photo',
-                    filename: item.image.filename
-                }))
-
+                const ssImages = parsedMedia.filter(o => o.type === 'photo' || o.type === 'thumbnail')
+                const ssVideos = parsedMedia.filter(o => o.type === 'video')
                 const ssProfileImageURL = getProfileImageURLFromWebInfo(webInfo)
                 const ssUserName = getUserNameFromWebInfo(webInfo)
                 const ssDescription = getDescriptionFromWebInfo(webInfo)
@@ -96,7 +106,7 @@ async function evaluate(page) {
                 return {
                     description: ssDescription,
                     images: ssImages,
-                    videos: [],
+                    videos: ssVideos,
                     profileImageURL: ssProfileImageURL || '',
                     userName: ssUserName,
                     authorName: ssUserName,
