@@ -17,11 +17,15 @@ async function evaluate(page) {
                 return urlPath.substring(urlPath.lastIndexOf('/') + 1).toLowerCase()
             }
 
-            function getImagesFromScheduledServerJS(script) {
+            function getWebInfoFromScheduledServerJS(script) {
                 const relayPrefetchedStreamCache = script?.["require"]?.[0]?.[3]?.[0]?.["__bbox"]?.["require"]?.[0]
                 const rolarisPostRootQueryRelayPreloader__result__data = relayPrefetchedStreamCache?.[3]?.[1]?.["__bbox"]?.["result"]?.["data"]
                 const xdtApiV1MediaShortcodeWebInfo = rolarisPostRootQueryRelayPreloader__result__data?.["xdt_api__v1__media__shortcode__web_info"]
-                const carousel_media = xdtApiV1MediaShortcodeWebInfo?.["items"]?.[0]?.["carousel_media"]
+                return xdtApiV1MediaShortcodeWebInfo
+            }
+
+            function getImagesFromWebInfo(webInfo) {
+                const carousel_media = webInfo?.["items"]?.[0]?.["carousel_media"]
                 const parsed = carousel_media.map(o => {
                     const images = o["image_versions2"]["candidates"]
                     const largestImage = images.sort((a, b) => b.height - a.height)[0]
@@ -30,21 +34,28 @@ async function evaluate(page) {
                         pk: o.pk,
                         id: o.id,
                         image: {
+                            alt: o.accessibility_caption || null,
                             url: largestImage.url,
                             filename: getFileNameFromUrl(largestImage.url),
                             height: largestImage.height,
                             width: largestImage.width
-                        }
+                        },
                     }
                 })
                 return parsed
             }
 
-            let allImages = []
+            function getProfileImageURLFromWebInfo(webInfo) {
+                return webInfo?.["items"]?.[0]?.['user']?.['profile_pic_url']
+            }
+
+            let ssImages = []
+            let ssProfileImageURL = null
             if (targetScript) {
-                const parsedImages = getImagesFromScheduledServerJS(JSON.parse(targetScript))
+                const webInfo = getWebInfoFromScheduledServerJS(JSON.parse(targetScript))
+                const parsedImages = getImagesFromWebInfo(webInfo)
                 parsedImages.forEach(item => {
-                    allImages.push({
+                    ssImages.push({
                         src: item.image.url,
                         alt: item.image.alt,
                         width: item.image.width,
@@ -53,6 +64,7 @@ async function evaluate(page) {
                         filename: item.image.filename
                     })
                 })
+                ssProfileImageURL = getProfileImageURLFromWebInfo(webInfo)
             }
 
             const isReel = new URL(document.location.href).pathname.indexOf('/reel/') > 0
@@ -126,11 +138,10 @@ async function evaluate(page) {
                 const createdAt = getCreatedAt(main)
 
                 return {
-                    html: document.innerHTML,
                     description,
-                    images: allImages.length > 0 ? allImages : images,
+                    images: ssImages.length > 0 ? ssImages : images,
                     videos: [],
-                    profileImageURL,
+                    profileImageURL: ssProfileImageURL || profileImageURL || '',
                     userName,
                     authorName,
                     createdAt,
