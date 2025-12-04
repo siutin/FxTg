@@ -1,10 +1,59 @@
 async function evaluate(page) {
     await page.waitForSelector('main')
     await page.waitForSelector('main [role="presentation"]')
+    await page.waitForSelector('script[type="application/json"][data-sjs]')
 
     /*global document*/
     return await page.evaluate(() => {
         try {
+
+            // selector script[type="application/json"][data-sjs]
+            const scripts = document.querySelectorAll('script[type="application/json"][data-sjs]')
+            const scheduledServerJSs = Array.from(scripts).map(o => o.text).filter(o => o.contains('"ScheduledServerJS"'))
+            const targetScript = scheduledServerJSs.find(o => o.contains('xdt_api__v1__media__shortcode__web_info'))
+
+            function getFileNameFromUrl(url) {
+                const urlPath = new URL(url).pathname
+                return urlPath.substring(urlPath.lastIndexOf('/') + 1).toLowerCase()
+            }
+
+            function getImagesFromScheduledServerJS(script) {
+                const relayPrefetchedStreamCache = script?.["require"]?.[0]?.[3]?.[0]?.["__bbox"]?.["require"]?.[0]
+                const rolarisPostRootQueryRelayPreloader__result__data = relayPrefetchedStreamCache?.[3]?.[1]?.["__bbox"]?.["result"]?.["data"]
+                const xdtApiV1MediaShortcodeWebInfo = rolarisPostRootQueryRelayPreloader__result__data?.["xdt_api__v1__media__shortcode__web_info"]
+                const carousel_media = xdtApiV1MediaShortcodeWebInfo?.["items"]?.[0]?.["carousel_media"]
+                const parsed = carousel_media.map(o => {
+                    const images = o["image_versions2"]["candidates"]
+                    const largestImage = images.sort((a, b) => b.height - a.height)[0]
+                    return {
+                        code: o.code,
+                        pk: o.pk,
+                        id: o.id,
+                        image: {
+                            url: largestImage.url,
+                            filename: getFileNameFromUrl(largestImage.url),
+                            height: largestImage.height,
+                            width: largestImage.width
+                        }
+                    }
+                })
+                return parsed
+            }
+
+            let allImages = []
+            if (targetScript) {
+                const parsedImages = getImagesFromScheduledServerJS(JSON.parse(targetScript))
+                parsedImages.forEach(item => {
+                    allImages.push({
+                        src: item.image.url,
+                        alt: item.image.alt,
+                        width: item.image.width,
+                        height: item.image.height,
+                        type: 'photo',
+                        filename: item.image.filename
+                    })
+                })
+            }
 
             const isReel = new URL(document.location.href).pathname.indexOf('/reel/') > 0
             const main = document.querySelector('main')
@@ -79,7 +128,7 @@ async function evaluate(page) {
                 return {
                     html: document.innerHTML,
                     description,
-                    images,
+                    images: allImages.length > 0 ? allImages : images,
                     videos: [],
                     profileImageURL,
                     userName,
