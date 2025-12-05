@@ -38,40 +38,65 @@ async function evaluate(page) {
             }
 
             function getMediaFromWebInfo(webInfo) {
-                const carousel_media = webInfo?.["items"]?.[0]?.["carousel_media"]
+                const item = webInfo?.["items"]?.[0]
+                const carousel_media = item?.["carousel_media"]
                 const parsed = []
-                carousel_media.forEach(o => {
-                    const images = o["image_versions2"]["candidates"]
-                    const largestImage = images.sort((a, b) => b.height - a.height)[0]
-                    const media_type = o["media_type"]
-                    const isVideo = media_type === 2
-                    parsed.push({
-                        // code: o.code,
-                        // pk: o.pk,
-                        // id: o.id,
-                        src: largestImage.url,
-                        alt: o.accessibility_caption || null,
-                        // filename: getFileNameFromUrl(largestImage.url),
-                        height: largestImage.height,
-                        width: largestImage.width,
-                        type: isVideo ? 'thumbnail' : 'photo'
-                    })
-
-                    if (isVideo) {
-                        const video_versions = o["video_versions"]
-                        const video = video_versions[0]
+                if (carousel_media) {
+                    carousel_media.forEach(o => {
+                        const images = o["image_versions2"]["candidates"]
+                        const largestImage = images.sort((a, b) => b.height - a.height)[0]
+                        const media_type = o["media_type"]
+                        const isVideo = media_type === 2
                         parsed.push({
                             // code: o.code,
                             // pk: o.pk,
                             // id: o.id,
+                            src: largestImage.url,
+                            alt: o.accessibility_caption || null,
+                            // filename: getFileNameFromUrl(largestImage.url),
+                            height: largestImage.height,
+                            width: largestImage.width,
+                            type: isVideo ? 'thumbnail' : 'photo'
+                        })
+
+                        if (isVideo) {
+                            const video_versions = o["video_versions"]
+                            const video = video_versions[0]
+                            parsed.push({
+                                // code: o.code,
+                                // pk: o.pk,
+                                // id: o.id,
+                                src: video.url,
+                                // filename: getFileNameFromUrl(video.url),
+                                height: video.height,
+                                width: video.width,
+                                type: 'video'
+                            })
+                        }
+                    })
+                } else {
+                    const images = item["image_versions2"]["candidates"]
+                    const largestImage = images.sort((a, b) => b.height - a.height)[0]
+                    const isVideo = item["media_type"] === 2
+                    parsed.push({
+                        src: largestImage.url,
+                        alt: item.accessibility_caption || null,
+                        height: largestImage.height,
+                        width: largestImage.width,
+                        type: isVideo ? 'thumbnail' : 'photo'
+                    })
+                    if (isVideo) {
+                        const video_versions = item["video_versions"]
+                        const video = video_versions[0]
+                        parsed.push({
                             src: video.url,
-                            // filename: getFileNameFromUrl(video.url),
+                            alt: item.accessibility_caption || null,
                             height: video.height,
                             width: video.width,
                             type: 'video'
                         })
                     }
-                })
+                }
                 return parsed
             }
 
@@ -100,8 +125,10 @@ async function evaluate(page) {
 
             function getCreatedAtFromWebInfo(webInfo) {
                 const takenAt = webInfo?.["items"]?.[0]?.['taken_at']
-                const createdAt = new Date(takenAt).toISOString()
-                return createdAt
+                if (takenAt && typeof takenAt === 'number') {
+                    return new Date(takenAt * 1000).toISOString()
+                }
+                return null
             }
 
             if (targetScript) {
@@ -127,7 +154,6 @@ async function evaluate(page) {
                     status: ssStatus
                 }
             } else {
-                const isReel = new URL(document.location.href).pathname.indexOf('/reel/') > 0
                 const main = document.querySelector('main')
 
                 if (main) {
