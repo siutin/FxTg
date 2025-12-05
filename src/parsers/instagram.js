@@ -136,8 +136,6 @@ async function evaluate(page) {
                 const webInfo = getWebInfoFromScheduledServerJS(JSON.parse(targetScript))
                 const parsedMedia = getMediaFromWebInfo(webInfo)
 
-                const ssImages = parsedMedia.filter(o => o.type === 'photo' || o.type === 'thumbnail')
-                const ssVideos = parsedMedia.filter(o => o.type === 'video')
                 const ssProfileImageURL = getProfileImageURLFromWebInfo(webInfo)
                 const ssUserName = getUserNameFromWebInfo(webInfo)
                 const ssDescription = getDescriptionFromWebInfo(webInfo)
@@ -145,8 +143,7 @@ async function evaluate(page) {
                 const ssStatus = getStatusFromWebInfo(webInfo)
                 return {
                     description: ssDescription,
-                    images: ssImages,
-                    videos: ssVideos,
+                    media: parsedMedia,
                     profileImageURL: ssProfileImageURL || '',
                     userName: ssUserName,
                     authorName: ssUserName,
@@ -256,26 +253,26 @@ async function evaluate(page) {
 
 function callback(evaluatedResult) {
 
-    const { errorMessage, errorStack, description, images, videos, userName, authorName, profileImageURL, createdAt, status } = evaluatedResult
+    const { errorMessage, errorStack, description, media, userName, authorName, profileImageURL, createdAt, status } = evaluatedResult
 
     if (errorMessage) throw new Error(`${errorMessage}\n${errorStack}`)
 
-    const media = []
-    images.forEach(image => {
-        media.push({
-            alt: image.alt,
-            filename: generateFilename(image.src),
-            url: image.src,
-            type: image.type
-        })
-    })
-
-    videos.forEach(video => {
-        media.push({
-            filename: generateFilename(video.src),
-            url: video.src,
-            type: 'video'
-        })
+    const newMedia = media.map(o => {
+        const filename = generateFilename(o.src)
+        if (o.type === 'video') {
+            return {
+                filename,
+                url: o.src,
+                type: 'video'
+            }
+        } else {
+            return {
+                alt: o.alt,
+                filename,
+                url: o.src,
+                type: o.type
+            }
+        }
     })
 
     const result = {
@@ -286,7 +283,7 @@ function callback(evaluatedResult) {
         profileImageURL,
         createdAt,
         status,
-        media
+        media: newMedia
     }
     return result
 }
