@@ -91,9 +91,22 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
 
     const canvasWidth = 1024
     try {
-        // Load all images first
-        const loadedImages = await Promise.all(imageUrls.map(url => loadImage(url)))
-        logger.log('debug', `Loaded images: ${loadedImages.length}`)
+        // Load all images first; allow partial success to avoid failing the whole request
+        const results = await Promise.allSettled(imageUrls.map(url => loadImage(url)))
+        const loadedImages = results.filter(r => r.status === 'fulfilled').map(r => r.value)
+        const failed = results.filter(r => r.status === 'rejected')
+
+        if (failed.length > 0) {
+            logger.log('warn', `Some images failed to load for mosaic`, {
+                failedCount: failed.length,
+                total: imageUrls.length,
+                reasons: failed.slice(0, 3).map(f => f.reason?.message || String(f.reason))
+            })
+        }
+
+        if (loadedImages.length === 0) {
+            throw new Error('No images could be loaded for mosaic')
+        }
 
         const mosaic = new Mosaic(loadedImages, canvasWidth)
         const canvas = mosaic.draw()
