@@ -21,9 +21,15 @@ function generateFilename(url) {
 }
 
 async function evaluate(page) {
-    await page.waitForSelector('main')
-    await page.waitForSelector('main [role="presentation"]')
-    await page.waitForSelector('script[type="application/json"][data-sjs]')
+    // Wait for selectors with reasonable timeouts
+    // Wait for main and script in parallel since they don't depend on each other
+    await Promise.all([
+        page.waitForSelector('main', { timeout: 10000 }),
+        page.waitForSelector('script[type="application/json"][data-sjs]', { timeout: 10000 })
+    ])
+    
+    // Wait for presentation element (depends on main being loaded)
+    await page.waitForSelector('main [role="presentation"]', { timeout: 5000 })
 
     // Inject extracted functions into browser context
     // Use Function.prototype.toString to ensure proper serialization

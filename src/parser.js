@@ -31,17 +31,26 @@ export class Parser {
 
         const page = await this.browser.newPage()
         try {
-
-            // Navigate to page
-            await page.goto(url, {
-                waitUntil: 'networkidle2',
-                timeout: 30000
+            // Block unnecessary resources to speed up loading
+            await page.setRequestInterception(true)
+            page.on('request', (req) => {
+                const resourceType = req.resourceType()
+                // Block images, stylesheets, fonts, and media - we only need the HTML structure and scripts
+                if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+                    req.abort()
+                } else {
+                    req.continue()
+                }
             })
 
-            // Wait for network to be idle
-            await page.waitForNetworkIdle({
-                timeout: 5000,
-                idleTime: 100
+            // user agent
+            // page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36')
+
+            // Navigate to page - use 'load' instead of 'networkidle2' for faster loading
+            // 'load' waits for the load event, which is much faster than networkidle2
+            await page.goto(url, {
+                waitUntil: 'load',
+                timeout: 30000
             })
 
             if (url.startsWith('https://www.instagram.com')) {
