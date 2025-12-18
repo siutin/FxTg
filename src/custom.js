@@ -14,7 +14,7 @@ function isUrl(source) {
   return source.startsWith('http://') || source.startsWith('https://')
 }
 
-async function fetchBuffer(source, { timeoutMs = 10_000 } = {}) {
+async function fetchBuffer(source, { timeoutMs = 5_000 } = {}) {
   if (!isUrl(source)) {
     const buffer = await fs.readFile(source)
     return { buffer, contentType: null }
