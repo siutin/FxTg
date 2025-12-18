@@ -23,13 +23,13 @@ function generateFilename(url) {
 async function evaluate(page) {
     // Wait for selectors with reasonable timeouts
     // Wait for main and script in parallel since they don't depend on each other
-    await Promise.all([
-        page.waitForSelector('main', { timeout: 10000 }),
-        page.waitForSelector('script[type="application/json"][data-sjs]', { timeout: 10000 })
-    ])
-    
+    // await Promise.all([
+    //     page.waitForSelector('main', { timeout: 10000 }),
+    //     page.waitForSelector('script[type="application/json"][data-sjs]', { timeout: 10000 })
+    // ])
+
     // Wait for presentation element (depends on main being loaded)
-    await page.waitForSelector('main [role="presentation"]', { timeout: 5000 })
+    // await page.waitForSelector('main [role="presentation"]', { timeout: 5000 })
 
     // Inject extracted functions into browser context
     // Use Function.prototype.toString to ensure proper serialization
@@ -56,109 +56,135 @@ async function evaluate(page) {
         try {
 
             // selector script[type="application/json"][data-sjs]
-            const scripts = document.querySelectorAll('script[type="application/json"][data-sjs]')
-            const scheduledServerJSs = Array.from(scripts).map(o => o.text).filter(o => o.contains('"ScheduledServerJS"'))
-            const targetScript = scheduledServerJSs.find(o => o.contains('xdt_api__v1__media__shortcode__web_info'))
 
-            if (targetScript) {
-                const webInfo = getWebInfoFromScheduledServerJS(JSON.parse(targetScript))
-                const parsedMedia = getMediaFromWebInfo(webInfo)
-                const ssProfileImageURL = getProfileImageURLFromWebInfo(webInfo)
-                const ssUserName = getUserNameFromWebInfo(webInfo)
-                const ssDescription = getDescriptionFromWebInfo(webInfo)
-                const ssCreatedAt = getCreatedAtFromWebInfo(webInfo)
-                const ssStatus = getStatusFromWebInfo(webInfo)
-                return {
-                    description: ssDescription,
-                    media: parsedMedia,
-                    profileImageURL: ssProfileImageURL || '',
-                    userName: ssUserName,
-                    authorName: ssUserName,
-                    createdAt: ssCreatedAt,
-                    status: ssStatus
-                }
-            } else {
-                const main = document.querySelector('main')
-
-                if (main) {
-
-                    function getImages(article) {
-                        const imgs = article.querySelectorAll("div[role='presentation'] img")
-                        return Array.from(imgs).map(img => {
-                            return {
-                                src: img.src,
-                                alt: img.alt,
-                                width: img.width,
-                                height: img.height,
-                                type: 'photo'
-                            }
-                        })
-                    }
-
-                    function getProfileImageURL(article) {
-                        const header = article.querySelector("header")
-                        return header?.querySelector("img")?.src
-                    }
-
-                    function getUserName(document) {
-                        const head = document.querySelector("head")
-                        if (head) {
-                            const content = head.querySelector("meta[name='twitter:title']")?.content
-                            if (content) {
-                                const s = content.substr(0, content.lastIndexOf('•') - 1)
-                                const matches = s.match(/\(([^)]+)\)/)
-                                return matches ? matches[1].replace("@", '') : null
-                            }
-                            return null
-                        }
-                    }
-
-                    function getAuthorName(document) {
-                        const head = document.querySelector("head")
-                        if (head) {
-                            const content = head.querySelector("meta[name='twitter:title']")?.content
-                            if (content) {
-                                const s = content.substr(0, content.lastIndexOf('•') - 1)
-                                const ss = `${s.substr(0, s.lastIndexOf("@") - 2)}`.trim()
-                                if (ss.length > 0) return ss
-                            }
-                            return null
-                        }
-                    }
-
-                    function getDescription(document) {
-                        const head = document.querySelector("head")
-                        if (head) {
-                            const content = head.querySelector("meta[property='og:description']")?.content
-                            return content
-                        }
-                        return null
-                    }
-
-                    function getCreatedAt(article) {
-                        const time = article.querySelector("time")
-                        return time ? time.dateTime : null
-                    }
-
-                    const images = getImages(main)
-                    const profileImageURL = getProfileImageURL(document)
-                    const userName = getUserName(document)
-                    const authorName = getAuthorName(document)
-                    const description = getDescription(document)
-                    const createdAt = getCreatedAt(main)
-
+            function extractDataFromTargetScript (targetScript) {
+                if (targetScript) {
+                    const webInfo = getWebInfoFromScheduledServerJS(JSON.parse(targetScript.textContent))
+                    const parsedMedia = getMediaFromWebInfo(webInfo)
+                    const ssProfileImageURL = getProfileImageURLFromWebInfo(webInfo)
+                    const ssUserName = getUserNameFromWebInfo(webInfo)
+                    const ssDescription = getDescriptionFromWebInfo(webInfo)
+                    const ssCreatedAt = getCreatedAtFromWebInfo(webInfo)
+                    const ssStatus = getStatusFromWebInfo(webInfo)
                     return {
-                        description,
-                        images,
-                        videos: [],
-                        profileImageURL: profileImageURL || '',
-                        userName,
-                        authorName,
-                        createdAt,
-                        status: { likeCount: 0, replyCount: 0, videoViewCount: 0, viewPlayCount: 0 }
+                        description: ssDescription,
+                        media: parsedMedia,
+                        profileImageURL: ssProfileImageURL || '',
+                        userName: ssUserName,
+                        authorName: ssUserName,
+                        createdAt: ssCreatedAt,
+                        status: ssStatus
+                    }
+                } else {
+                    const main = document.querySelector('main')
+
+                    if (main) {
+
+                        function getImages(article) {
+                            const imgs = article.querySelectorAll("div[role='presentation'] img")
+                            return Array.from(imgs).map(img => {
+                                return {
+                                    src: img.src,
+                                    alt: img.alt,
+                                    width: img.width,
+                                    height: img.height,
+                                    type: 'photo'
+                                }
+                            })
+                        }
+
+                        function getProfileImageURL(article) {
+                            const header = article.querySelector("header")
+                            return header?.querySelector("img")?.src
+                        }
+
+                        function getUserName(document) {
+                            const head = document.querySelector("head")
+                            if (head) {
+                                const content = head.querySelector("meta[name='twitter:title']")?.content
+                                if (content) {
+                                    const s = content.substr(0, content.lastIndexOf('•') - 1)
+                                    const matches = s.match(/\(([^)]+)\)/)
+                                    return matches ? matches[1].replace("@", '') : null
+                                }
+                                return null
+                            }
+                        }
+
+                        function getAuthorName(document) {
+                            const head = document.querySelector("head")
+                            if (head) {
+                                const content = head.querySelector("meta[name='twitter:title']")?.content
+                                if (content) {
+                                    const s = content.substr(0, content.lastIndexOf('•') - 1)
+                                    const ss = `${s.substr(0, s.lastIndexOf("@") - 2)}`.trim()
+                                    if (ss.length > 0) return ss
+                                }
+                                return null
+                            }
+                        }
+
+                        function getDescription(document) {
+                            const head = document.querySelector("head")
+                            if (head) {
+                                const content = head.querySelector("meta[property='og:description']")?.content
+                                return content
+                            }
+                            return null
+                        }
+
+                        function getCreatedAt(article) {
+                            const time = article.querySelector("time")
+                            return time ? time.dateTime : null
+                        }
+
+                        const images = getImages(main)
+                        const profileImageURL = getProfileImageURL(document)
+                        const userName = getUserName(document)
+                        const authorName = getAuthorName(document)
+                        const description = getDescription(document)
+                        const createdAt = getCreatedAt(main)
+
+                        return {
+                            description,
+                            images,
+                            videos: [],
+                            profileImageURL: profileImageURL || '',
+                            userName,
+                            authorName,
+                            createdAt,
+                            status: { likeCount: 0, replyCount: 0, videoViewCount: 0, viewPlayCount: 0 }
+                        }
                     }
                 }
             }
+
+            return new Promise((resolve, reject) => {
+                function waitForTargetScript(n) {
+                    const scripts = document.querySelectorAll('script[type="application/json"][data-sjs]')
+                    const scheduledServerJSs = Array.from(scripts).filter(o => o.textContent?.includes('"ScheduledServerJS"'))
+                    const foundScript = scheduledServerJSs.find(o => o.textContent?.includes('xdt_api__v1__media__shortcode__web_info'))
+
+                    if (foundScript) {
+                        resolve(foundScript)
+                        return
+                    }
+                    if (n < 0) {
+                        reject(new Error('targetScript not found after maximum attempts'))
+                        return
+                    }
+
+                    // Wait 10ms before next attempt
+                    setTimeout(() => waitForTargetScript(n - 1), 10)
+                }
+                waitForTargetScript(300)
+            })
+            .then(foundScript => {
+                return extractDataFromTargetScript(foundScript)
+            })
+            .catch(error => {
+                throw error
+            })
 
         } catch (ex) {
             return {
