@@ -151,13 +151,26 @@ app.get('/media_download/:username/:postId/:filename', async (req, res) => {
 
         const customUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/450.0.0.38.108;FBBV/564431005;FBDV/iPhone17,1;FBMD/iPhone;FBSN/iOS;FBSV/18.1;FBSS/3;FBID/phone;FBLC/en_GB;FBOP/5;FBRV/567052743]'
 
-        const headResponse = await axios({
-            method: 'head',
-            url: fileUrl,
-            headers: {
-                'User-Agent': customUA
+        // retry few times if error
+        let headResponse = null
+        for (let i = 0; i < 5; i++) {
+            try {
+                headResponse = await axios({
+                    method: 'head',
+                    url: fileUrl,
+                    headers: {
+                        'User-Agent': customUA
+                    }
+                })
+                break
+            } catch (error) {
+                logger.log('error', `Error fetching file: ${error}`, { stack: error?.stack })
+                await new Promise(resolve => setTimeout(resolve, 300))
+                if (i === 2) {
+                    throw error
+                }
             }
-        })
+        }
 
         const contentLength = parseInt(headResponse.headers['content-length'])
         const contentType = headResponse.headers['content-type']
