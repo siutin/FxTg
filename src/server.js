@@ -76,6 +76,25 @@ function generateRandomIdentifier(digits = 6) {
     return `${random.toString().padStart(digits, "0")}`
 }
 
+function getImageUrl(username, postId, filename) {
+    if (!username || !postId || !filename) {
+        throw new Error('invalid username, postId or filename')
+    }
+    return `${baseUrl}/image_download/${username}/${postId}/${filename}`
+} 
+
+function getImageUrls(images, username, postId) {
+    return images.map(image => {
+        if (image.url && image.url.includes('/image_download/')) {
+            return image
+        }
+        return {
+            ...image,
+            url: getImageUrl(username, postId, image.filename)
+        }
+    })
+}
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'))
 })
@@ -113,12 +132,118 @@ app.get('/mosaic/:username/post/:postId', async (req, res) => {
 
         // Send response
         res.setHeader('Content-Type', 'image/png')
+        res.setHeader('Access-Control-Allow-Origin', '*')
         const buffer = canvas.toBuffer('image/png')
         res.send(buffer)
 
     } catch (error) {
         logger.log('error', `Error creating mosaic: ${error}`, { stack: error?.stack })
         res.status(500).send('Error creating mosaic')
+    }
+})
+
+app.get('/image_download/:username/:postId/:filename', async (req, res) => {
+    try {
+        const { username, postId, filename } = req.params
+        const fileUrl = cache.getValue(`${username}|${postId}|image|${filename}`)
+        if (!fileUrl) {
+            res.status(404).send('File not found')
+            return
+        }
+
+        const customUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/450.0.0.38.108;FBBV/564431005;FBDV/iPhone17,1;FBMD/iPhone;FBSN/iOS;FBSV/18.1;FBSS/3;FBID/phone;FBLC/en_GB;FBOP/5;FBRV/567052743]'
+
+        // retry few times if error
+        let headResponse = null
+        for (let i = 0; i < 5; i++) {
+            try {
+                headResponse = await axios({
+                    method: 'head',
+                    url: fileUrl,
+                    headers: {
+                        'User-Agent': customUA
+                    }
+                })
+                break
+            } catch (error) {
+                logger.log('error', `Error fetching image: ${error}`, { stack: error?.stack })
+                await new Promise(resolve => setTimeout(resolve, 300))
+                if (i === 2) {
+                    throw error
+                }
+            }
+        }
+
+        const contentLength = parseInt(headResponse.headers['content-length'])
+        const contentType = headResponse.headers['content-type'] || 'image/jpeg'
+
+        // Parse Range header
+        const range = req.headers.range
+        if (range) {
+            const parts = range.replace(/bytes=/, '').split('-')
+            const start = parseInt(parts[0], 10)
+            const end = parts[1] ? parseInt(parts[1], 10) : contentLength - 1
+            const chunksize = (end - start) + 1
+
+            const response = await axios({
+                method: 'get',
+                url: fileUrl,
+                responseType: 'stream',
+                headers: {
+                    'Range': `bytes=${start}-${end}`,
+                    'User-Agent': customUA
+                }
+            })
+
+            // Set partial content headers with CORS
+            res.status(206)
+            res.set({
+                'Content-Range': `bytes ${start}-${end}/${contentLength}`,
+                'Accept-Ranges': 'bytes',
+                'Content-Length': chunksize,
+                'Content-Type': contentType,
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+                'Access-Control-Allow-Headers': 'Range'
+            })
+
+            response.data.pipe(res)
+        } else {
+            // Full content request
+            const response = await axios({
+                method: 'get',
+                url: fileUrl,
+                responseType: 'stream',
+                headers: {
+                    'User-Agent': customUA
+                }
+            })
+
+            res.set({
+                'Content-Length': contentLength,
+                'Content-Type': contentType,
+                'Accept-Ranges': 'bytes',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+                'Access-Control-Allow-Headers': 'Range'
+            })
+
+            response.data.pipe(res)
+        }
+
+        // Handle streaming errors
+        res.on('error', (error) => {
+            logger.log('error', `Image streaming error: ${error} `, { stack: error?.stack })
+            if (!res.headersSent) {
+                res.status(500).send('Error streaming image')
+            }
+        })
+
+    } catch (error) {
+        logger.log('error', `Image download error: ${error}`, { stack: error?.stack })
+        if (!res.headersSent) {
+            res.status(500).send('Error downloading image')
+        }
     }
 })
 
@@ -193,13 +318,16 @@ app.get('/media_download/:username/:postId/:filename', async (req, res) => {
                 }
             })
 
-            // Set partial content headers
+            // Set partial content headers with CORS
             res.status(206)
             res.set({
                 'Content-Range': `bytes ${start}-${end}/${contentLength}`,
                 'Accept-Ranges': 'bytes',
                 'Content-Length': chunksize,
-                'Content-Type': contentType
+                'Content-Type': contentType,
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+                'Access-Control-Allow-Headers': 'Range'
             })
 
             response.data.pipe(res)
@@ -217,7 +345,10 @@ app.get('/media_download/:username/:postId/:filename', async (req, res) => {
             res.set({
                 'Content-Length': contentLength,
                 'Content-Type': contentType,
-                'Accept-Ranges': 'bytes'
+                'Accept-Ranges': 'bytes',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+                'Access-Control-Allow-Headers': 'Range'
             })
 
             response.data.pipe(res)
@@ -250,6 +381,14 @@ async function threadsHandler(req, res) {
 
         if (!userAgent.includes('Telegram') && !userAgent.includes('Discordbot')) {
             return res.status(301).redirect(threadsUrl)
+        }
+
+        const cachedData = cache.getValue(`${username}|${postId}|data`)
+        if (cachedData) {
+            const _renderData = JSON.parse(cachedData)
+            _renderData.images = getImageUrls(_renderData.images, username, postId)
+            logger.log('debug', 'threads render data cache found', { username, postId })
+            return res.send(render(_renderData))
         }
 
         const data = await parser.parse(threadsUrl)
@@ -309,6 +448,7 @@ async function threadsHandler(req, res) {
         })
 
         cache.add(`${username}|${postId}`, images.map(o => o.url))
+        cache.add(`${username}|${postId}|data`, JSON.stringify(renderData))
 
         const html = render(renderData)
         res.send(html)
@@ -330,6 +470,14 @@ async function instagramHandler(req, res) {
 
         if (!userAgent.includes('Telegram') && !userAgent.includes('Discordbot')) {
             return res.status(301).redirect(postUrl)
+        }
+
+        const cachedData = cache.getValue(`${username}|${postId}|data`)
+        if (cachedData) {
+            const _renderData = JSON.parse(cachedData)
+            _renderData.images = getImageUrls(_renderData.images, username, postId)
+            logger.log('debug', 'instagram render data cache found', { username, postId })
+            return res.send(render(_renderData))
         }
 
         const data = await parser.parse(postUrl)
@@ -357,7 +505,7 @@ async function instagramHandler(req, res) {
             description: (description?.trim()?.length > 0 ? description : images.filter(o => o.type === 'photo')[0]?.alt) || "",
             createdAt,
             profileImageURL,
-            images,
+            images: [],
             videos: [],
             hasImage: images.filter(o => o.type === 'photo').length > 0,
             hasVideo: videos.length > 0,
@@ -387,7 +535,13 @@ async function instagramHandler(req, res) {
             cache.add(`${userName}|${postId}|video|${video.filename}`, video.url)
         })
 
+        images.forEach(image => {
+            renderData.images.push({ ...image, url: getImageUrl(userName, postId, image.filename) })
+            cache.add(`${userName}|${postId}|image|${image.filename}`, image.url)
+        })
+
         cache.add(`${userName}|${postId}`, images.map(o => o.url))
+        cache.add(`${username}|${postId}|data`, JSON.stringify(renderData))
 
         const html = render(renderData)
         res.send(html)
