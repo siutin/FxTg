@@ -387,6 +387,7 @@ async function threadsHandler(req, res) {
         if (cachedData) {
             const _renderData = JSON.parse(cachedData)
             _renderData.images = getImageUrls(_renderData.images, username, postId)
+            _renderData.mediaIndex = (imgIndex < 1 || imgIndex > _renderData.images.length) ? null : imgIndex - 1
             logger.log('debug', 'threads render data cache found', { username, postId })
             return res.send(render(_renderData))
         }
@@ -476,6 +477,7 @@ async function instagramHandler(req, res) {
         if (cachedData) {
             const _renderData = JSON.parse(cachedData)
             _renderData.images = getImageUrls(_renderData.images, username, postId)
+            _renderData.mediaIndex = (imgIndex < 1 || imgIndex > _renderData.images.length) ? null : imgIndex - 1
             logger.log('debug', 'instagram render data cache found', { username, postId })
             return res.send(render(_renderData))
         }
